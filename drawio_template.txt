@@ -44,17 +44,17 @@
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/Instance.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$element.GetWidth}}" height="{{$element.GetHight}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
-        {{ else if or ( or (eq $element.GetType  "ni") (eq $element.GetType  "ni_vsi")) (or  (eq $element.GetType  "ni_fp")  (eq $element.GetType  "ni_vsi_fp")) }}
+        {{ else if eq $element.GetType  "ni" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/devops/release_management.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$element.GetWidth}}" height="{{$element.GetHight}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
-            {{ if or (eq $element.GetType "ni_vsi")  (eq $element.GetType  "ni_vsi_fp") }}
-                <mxCell id="FXCXVvDxTQtwc45PbP1s-{{add $element.GetId 1 }}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/Instance.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" vertex="1">
+            {{ if ne $element.GetSvi "" }}
+                <mxCell id="FXCXVvDxTQtwc45PbP1s-{{add $element.GetId 1 }}" value="{{$element.GetSvi}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/Instance.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" vertex="1">
                 <mxGeometry x="30" y="-20" width="{{$element.GetWidth}}" height="{{$element.GetHight}}" as="geometry"/>
                 </mxCell>
             {{ end }}
-            {{ if or (eq $element.GetType  "ni_fp") (eq $element.GetType  "ni_vsi_fp") }}
-                <mxCell id="FXCXVvDxTQtwc45PbP1s-{{add $element.GetId  2 }}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/FloatingIP.svg;flipH=1;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" vertex="1">
+            {{ if ne $element.GetFip  "" }}
+                <mxCell id="FXCXVvDxTQtwc45PbP1s-{{add $element.GetId  2 }}" value="{{$element.GetFip}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/FloatingIP.svg;flipH=1;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" vertex="1">
                 <mxGeometry x="-50" y="10" width="{{$element.GetWidth}}" height="{{$element.GetHight}}" as="geometry"/>
                 </mxCell>
             {{ end }}
