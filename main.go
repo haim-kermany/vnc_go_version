@@ -145,6 +145,121 @@ func NewDrawioConnectElement(etype string, id uint, srcid uint, dstid uint, labe
 	return &DrawioConnectElement{DrawioElement{etype, id}, srcid, dstid, label, points}
 }
 
+///////////////////////////////////////
+////
+///
+//
+//
+//
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type TreeNodeInterface interface {
+	GetParent() TreeNodeInterface
+	addIconTreeNode(icon TreeNodeInterface)
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+type TreeNode struct {
+	drawioElementInterface DrawioElementInterface
+	parent                 TreeNodeInterface
+	elements               []TreeNodeInterface
+}
+
+func (tn *TreeNode) GetParent() TreeNodeInterface {
+	return tn.parent
+}
+func (tn *TreeNode) addIconTreeNode(icon TreeNodeInterface) {
+	tn.elements = append(tn.elements, icon)
+}
+
+func NewTreeNode(drawioElementInterface DrawioElementInterface, parent TreeNodeInterface) TreeNode {
+	return TreeNode{drawioElementInterface, parent, []TreeNodeInterface{}}
+
+}
+
+///////////////////////////////////////////////////////////////////////
+
+type NetworkTreeNode struct {
+	TreeNode
+	vpcs []*VpcTreeNode
+}
+
+func NewNetworkTreeNode() *NetworkTreeNode {
+	return &NetworkTreeNode{NewTreeNode(DrawioSquereElement{}, nil), []*VpcTreeNode{}}
+}
+
+type VpcTreeNode struct {
+	TreeNode
+	zones []*ZoneTreeNode
+	sgs   []*SGTreeNode
+}
+
+func NewVpcTreeNode(parent *NetworkTreeNode) *VpcTreeNode {
+	vpc := VpcTreeNode{NewTreeNode(DrawioSquereElement{}, parent), []*ZoneTreeNode{}, []*SGTreeNode{}}
+	parent.vpcs = append(parent.vpcs, &vpc)
+	return &vpc
+}
+
+///////////////////////////////////////////////////////////////////////
+
+type ZoneTreeNode struct {
+	TreeNode
+	subnets []*SubnetTreeNode
+}
+
+func NewZoneTreeNode(parent *VpcTreeNode) *ZoneTreeNode {
+	zone := ZoneTreeNode{NewTreeNode(DrawioSquereElement{}, parent), []*SubnetTreeNode{}}
+	parent.zones = append(parent.zones, &zone)
+	return &zone
+}
+
+///////////////////////////////////////////////////////////////////////
+
+type SGTreeNode struct {
+	TreeNode
+}
+
+func NewSGTreeNode(parent *VpcTreeNode) *SGTreeNode {
+	sg := SGTreeNode{NewTreeNode(DrawioSquereElement{}, parent)}
+	parent.sgs = append(parent.sgs, &sg)
+	return &sg
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+type SubnetTreeNode struct {
+	TreeNode
+}
+
+func NewSubnetTreeNode(parent *ZoneTreeNode) *SubnetTreeNode {
+	subnet := SubnetTreeNode{NewTreeNode(DrawioSubnetElement{}, parent)}
+	parent.subnets = append(parent.subnets, &subnet)
+	return &subnet
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+type IconTreeNode struct {
+	TreeNode
+	sg TreeNodeInterface
+}
+
+// ///////////////////////////////////////////
+type NITreeNode struct {
+	IconTreeNode
+}
+
+func NewNITreeNode(parent TreeNodeInterface, sg *SGTreeNode) *NITreeNode {
+	ni := NITreeNode{IconTreeNode{NewTreeNode(DrawioNetworkInterfaceElement{}, parent), sg}}
+	parent.addIconTreeNode(&ni)
+	if sg != nil {
+		sg.addIconTreeNode(&ni)
+	}
+	return &ni
+}
+
 // //////////////////////////////////////////////////////////////////////////////
 type DrawioInfo struct {
 	IconSize uint
@@ -152,6 +267,45 @@ type DrawioInfo struct {
 }
 
 func main() {
+	network := NewNetworkTreeNode()
+	vpc1 := NewVpcTreeNode(network)
+	vpc2 := NewVpcTreeNode(network)
+	zone11 := NewZoneTreeNode(vpc1)
+	zone12 := NewZoneTreeNode(vpc1)
+	zone21 := NewZoneTreeNode(vpc2)
+	zone22 := NewZoneTreeNode(vpc2)
+
+	sg11 := NewSGTreeNode(vpc1)
+	sg12 := NewSGTreeNode(vpc1)
+	sg21 := NewSGTreeNode(vpc2)
+	sg22 := NewSGTreeNode(vpc2)
+
+	subnet111 := NewSubnetTreeNode(zone11)
+	subnet112 := NewSubnetTreeNode(zone11)
+
+	subnet121 := NewSubnetTreeNode(zone12)
+
+	subnet211 := NewSubnetTreeNode(zone21)
+
+	subnet221 := NewSubnetTreeNode(zone22)
+	subnet222 := NewSubnetTreeNode(zone22)
+
+	NewNITreeNode(subnet111, sg11)
+	NewNITreeNode(subnet111, sg12)
+	NewNITreeNode(subnet112, sg12)
+	NewNITreeNode(subnet121, sg11)
+	NewNITreeNode(subnet211, sg21)
+	NewNITreeNode(subnet221, sg22)
+	NewNITreeNode(subnet222, sg22)
+	NewNITreeNode(zone11, nil)
+	NewNITreeNode(zone12, nil)
+	NewNITreeNode(zone21, nil)
+	NewNITreeNode(zone22, nil)
+
+	NewNITreeNode(vpc1, nil)
+	NewNITreeNode(vpc2, nil)
+	NewNITreeNode(network, nil)
+	NewNITreeNode(network, nil)
 
 	elements := []DrawioElementInterface{
 		NewDrawioSquereElement("pub", 40, 40, 1920, 1040, 895, 0, "noname"),
