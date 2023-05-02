@@ -106,11 +106,43 @@ func NewDrawioNetworkInterfaceElement(etype string, x uint, y uint, w uint, h ui
 	return &DrawioNetworkInterfaceElement{DrawioIconElement{DrawioLocatedElement{DrawioElement{etype, id}, pid, x, y, name}}, fip, svi}
 }
 
+type DrawioConnectElementPoint struct {
+	x uint
+	y uint
+}
+
+func (di DrawioConnectElementPoint) GetX() uint {
+	return di.x
+}
+func (di DrawioConnectElementPoint) GetY() uint {
+	return di.y
+}
+
 // //////////////////////////////////////////////////////////////////////////////
 type DrawioConnectElement struct {
 	DrawioElement
-	srcId uint
-	dstId uint
+	srcId  uint
+	dstId  uint
+	label  string
+	points []DrawioConnectElementPoint
+}
+
+func (di DrawioConnectElement) GetSrcId() uint {
+	return di.srcId
+}
+func (di DrawioConnectElement) GetDstId() uint {
+	return di.dstId
+}
+func (di DrawioConnectElement) GetLabel() string {
+	return di.label
+}
+
+func (di DrawioConnectElement) GetPoints() []DrawioConnectElementPoint {
+	return di.points
+}
+
+func NewDrawioConnectElement(etype string, id uint, srcid uint, dstid uint, label string, points []DrawioConnectElementPoint) *DrawioConnectElement {
+	return &DrawioConnectElement{DrawioElement{etype, id}, srcid, dstid, label, points}
 }
 
 // //////////////////////////////////////////////////////////////////////////////
@@ -154,6 +186,69 @@ func main() {
 		NewDrawioSquereElement("sg", 290.0, 120, 1260.0, 160, 1355, 1230, "ky-testenv-default-sg"),
 		NewDrawioSquereElement("sg", 290.0, 400, 1260.0, 160, 1360, 1230, "ky-testenv-default-sg"),
 		NewDrawioSquereElement("sg", 290.0, 680, 1260.0, 160, 1365, 1230, "ky-testenv-default-sg"),
+		NewDrawioConnectElement("diredge", 915, 1325, 1305, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 920, 1325, 1345, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 925, 1325, 1245, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 930, 1345, 1255, "TCP 443", []DrawioConnectElementPoint{DrawioConnectElementPoint{1090.0, 190.0}}),
+		NewDrawioConnectElement("diredge", 935, 1345, 1295, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 940, 1345, 1325, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 945, 1345, 1335, "TCP 443", []DrawioConnectElementPoint{DrawioConnectElementPoint{1590.0, 530.0}}),
+		NewDrawioConnectElement("diredge", 950, 1345, 1265, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 955, 1345, 1285, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 960, 1265, 1245, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 965, 1265, 1305, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 970, 1265, 1345, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 975, 1285, 1345, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 980, 1285, 1245, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 985, 1285, 1305, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 990, 1305, 1335, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 995, 1305, 1325, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1000, 1305, 1285, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1005, 1305, 1295, "TCP 443", []DrawioConnectElementPoint{DrawioConnectElementPoint{1030.0, 530.0}}),
+		NewDrawioConnectElement("diredge", 1010, 1305, 1255, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1015, 1305, 1265, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1020, 1255, 900, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{350.0, 280.0}, DrawioConnectElementPoint{290.0, 280.0}}),
+		NewDrawioConnectElement("diredge", 1025, 1255, 1305, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1030, 1255, 1345, "TCP 1-65535", []DrawioConnectElementPoint{DrawioConnectElementPoint{1090.0, 190.0}}),
+		NewDrawioConnectElement("diredge", 1035, 1255, 910, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{350.0, 276.0}, DrawioConnectElementPoint{290.0, 276.0}}),
+		NewDrawioConnectElement("diredge", 1040, 1255, 905, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{350.0, 272.0}, DrawioConnectElementPoint{290.0, 272.0}, DrawioConnectElementPoint{310.0, 190.0}}),
+		NewDrawioConnectElement("diredge", 1045, 1255, 1245, "TCP 1-65535", []DrawioConnectElementPoint{DrawioConnectElementPoint{470.0, 530.0}}),
+		NewDrawioConnectElement("diredge", 1050, 1335, 1245, "TCP 1-65535", []DrawioConnectElementPoint{DrawioConnectElementPoint{1090.0, 190.0}}),
+		NewDrawioConnectElement("diredge", 1055, 1335, 1345, "TCP 1-65535", []DrawioConnectElementPoint{DrawioConnectElementPoint{1590.0, 530.0}}),
+		NewDrawioConnectElement("diredge", 1060, 1335, 910, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{1470.0, 840.0}, DrawioConnectElementPoint{1410.0, 840.0}}),
+		NewDrawioConnectElement("diredge", 1065, 1335, 905, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{1470.0, 836.0}, DrawioConnectElementPoint{1410.0, 836.0}, DrawioConnectElementPoint{870.0, 190.0}}),
+		NewDrawioConnectElement("diredge", 1070, 1335, 1305, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1075, 1335, 900, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{1470.0, 832.0}, DrawioConnectElementPoint{1410.0, 832.0}}),
+		NewDrawioConnectElement("diredge", 1080, 1245, 1295, "TCP 443", []DrawioConnectElementPoint{DrawioConnectElementPoint{470.0, 530.0}}),
+		NewDrawioConnectElement("diredge", 1085, 1245, 1255, "TCP 443", []DrawioConnectElementPoint{DrawioConnectElementPoint{470.0, 530.0}}),
+		NewDrawioConnectElement("diredge", 1090, 1245, 1265, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1095, 1245, 1285, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1100, 1245, 1325, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1105, 1245, 1335, "TCP 443", []DrawioConnectElementPoint{DrawioConnectElementPoint{1090.0, 190.0}}),
+		NewDrawioConnectElement("diredge", 1110, 1295, 1345, "TCP 1-65535", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("diredge", 1115, 1295, 905, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{910.0, 560.0}, DrawioConnectElementPoint{850.0, 560.0}, DrawioConnectElementPoint{590.0, 190.0}}),
+		NewDrawioConnectElement("diredge", 1120, 1295, 910, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{910.0, 556.0}, DrawioConnectElementPoint{850.0, 556.0}}),
+		NewDrawioConnectElement("diredge", 1125, 1295, 1245, "TCP 1-65535", []DrawioConnectElementPoint{DrawioConnectElementPoint{470.0, 530.0}}),
+		NewDrawioConnectElement("diredge", 1130, 1295, 1305, "TCP 1-65535", []DrawioConnectElementPoint{DrawioConnectElementPoint{1030.0, 530.0}}),
+		NewDrawioConnectElement("diredge", 1135, 1295, 900, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{910.0, 552.0}, DrawioConnectElementPoint{850.0, 552.0}}),
+		NewDrawioConnectElement("undiredge", 1140, 1285, 1265, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{810.0, 470.0}}),
+		NewDrawioConnectElement("undiredge", 1145, 1325, 1265, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{1090.0, 470.0}}),
+		NewDrawioConnectElement("undiredge", 1150, 1325, 1285, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1155, 1345, 1305, "TCP 443", []DrawioConnectElementPoint{DrawioConnectElementPoint{1370.0, 750.0}}),
+		NewDrawioConnectElement("undiredge", 1160, 1335, 1255, "", []DrawioConnectElementPoint{DrawioConnectElementPoint{1090.0, 190.0}}),
+		NewDrawioConnectElement("undiredge", 1165, 1285, 1255, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1170, 1325, 1255, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1175, 1295, 1255, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1180, 1265, 1255, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1185, 1265, 1335, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1190, 1325, 1335, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1195, 1285, 1335, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1200, 1345, 1245, "TCP 443", []DrawioConnectElementPoint{DrawioConnectElementPoint{1090.0, 750.0}}),
+		NewDrawioConnectElement("undiredge", 1205, 1305, 1245, "TCP 443", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1210, 1285, 1295, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1215, 1325, 1295, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1220, 1265, 1295, "", []DrawioConnectElementPoint{}),
+		NewDrawioConnectElement("undiredge", 1225, 1335, 1295, "", []DrawioConnectElementPoint{}),
 	}
 	templateFuncMap := template.FuncMap{
 		// The name "inc" is what the function will be called in the template text.
