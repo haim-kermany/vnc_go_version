@@ -6,9 +6,10 @@
 <mxCell id="0"/>
 <mxCell id="1" parent="0"/>
     {{ $IconSize := .IconSize}}
-    {{range $element := .Elements}}
-        <!-- {{$element.GetType}} {{$IconSize}}-->
-        {{ if eq $element.GetType "pub" }}
+    {{range $node := .Nodes}}
+        {{ $element := $node.DrawioElementInterface }}
+        <!-- {{$node.GetType}} {{$IconSize}}-->
+        {{ if eq $node.GetType "pub" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{add $element.GetId 1 }}" value="Icons" style="" parent="0"/>
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="" style="swimlane;fontStyle=0;horizontal=1;collapsible=0;startSize=28;swimlaneLine=0;swimlaneFillColor=none;fillColor=none;rounded=0;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=0;strokeColor=#4376BB;verticalAlign=top;align=left;spacingLeft=5;dashed=0;strokeWidth=1;container=1;" parent="1" vertex="1">
             <mxGeometry width="{{$element.GetWidth}}" height="{{$element.GetHight}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
@@ -16,36 +17,36 @@
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{add $element.GetId 2 }}" value="Public&lt;br&gt;Network" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=left;shadow=0;dashed=0;labelBackgroundColor=none;fontSize=12;spacingTop=0;image;image=img/lib/ibm/vpc/PublicTag.svg;part=1;labelPosition=right;verticalLabelPosition=middle;verticalAlign=middle;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" vertex="1">
             <mxGeometry width="30" height="30" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "vpc" }}
+        {{ else if eq $node.GetType  "vpc" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="VPC" style="swimlane;fontStyle=0;horizontal=1;collapsible=0;startSize=28;swimlaneLine=0;swimlaneFillColor=none;fillColor=none;rounded=0;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=12;strokeColor=#417CB9;verticalAlign=top;align=left;spacingLeft=30;spacingTop=1;dashed=0;strokeWidth=1;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$element.GetWidth}}" height="{{$element.GetHight}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{add $element.GetId 1 }}" value="" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/VPCTag.svg;part=1;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" vertex="1">
             <mxGeometry width="30" height="30" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "zone" }}
+        {{ else if eq $node.GetType  "zone" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="swimlane;fontStyle=0;horizontal=1;collapsible=0;startSize=28;swimlaneLine=0;swimlaneFillColor=none;fillColor=none;rounded=0;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=0;strokeColor=#00882B;verticalAlign=top;align=left;spacingLeft=30;dashed=1;strokeWidth=1;container=1;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$element.GetWidth}}" height="{{$element.GetHight}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{add $element.GetId 1 }}" value="" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/ZoneTag.svg;part=1;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" vertex="1">
             <mxGeometry width="30" height="30" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "subnet" }}
+        {{ else if eq $node.GetType  "subnet" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetIP}}: {{$element.GetName}}" style="swimlane;fontStyle=0;horizontal=1;collapsible=0;startSize=28;swimlaneLine=0;swimlaneFillColor=none;fillColor=none;rounded=0;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=12;strokeColor=#2A8838;verticalAlign=top;align=left;spacingLeft=30;spacingTop=1;dashed=0;strokeWidth=1;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$element.GetWidth}}" height="{{$element.GetHight}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{add $element.GetId 1 }}" value="{{$element.GetKey}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/SubnetTag.svg;part=1;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" vertex="1">
             <mxGeometry width="30" height="40" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "sg" }}
+        {{ else if eq $node.GetType  "sg" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="rounded=0;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=0;strokeColor=#FD0000;fillColor=none;verticalAlign=top;align=center;spacingLeft=5;dashed=1;dashPattern=5 2;labelPosition=center;verticalLabelPosition=middle;strokeWidth=2;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$element.GetWidth}}" height="{{$element.GetHight}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "vsi" }}
+        {{ else if eq $node.GetType  "vsi" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/Instance.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$IconSize}}" height="{{$IconSize}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "ni" }}
+        {{ else if eq $node.GetType  "ni" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/devops/release_management.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$IconSize}}" height="{{$IconSize}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
@@ -59,28 +60,28 @@
                 <mxGeometry x="-50" y="10" width="{{$IconSize}}" height="{{$IconSize}}" as="geometry"/>
                 </mxCell>
             {{ end }}
-        {{ else if eq $element.GetType  "gateway" }}
+        {{ else if eq $node.GetType  "gateway" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/PublicGateway.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$IconSize}}" height="{{$IconSize}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "endpoint" }}
+        {{ else if eq $node.GetType  "endpoint" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/CloudServices.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$IconSize}}" height="{{$IconSize}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "internet" }}
+        {{ else if eq $node.GetType  "internet" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/Internet.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$IconSize}}" height="{{$IconSize}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "internet_service" }}
+        {{ else if eq $node.GetType  "internet_service" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/Internet.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$IconSize}}" height="{{$IconSize}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
-        {{ else if eq $element.GetType  "user" }}
+        {{ else if eq $node.GetType  "user" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/users/user.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
             <mxGeometry width="{{$IconSize}}" height="{{$IconSize}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
-        {{ else if or (eq $element.GetType  "diredge") (eq $element.GetType  "undiredge") }}
-            {{ if eq $element.GetType  "undiredge" }}
+        {{ else if or (eq $node.GetType  "diredge") (eq $node.GetType  "undiredge") }}
+            {{ if eq $node.GetType  "undiredge" }}
                 <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{ $element.GetLabel}}" style="endArrow=classic;startArrow=classic;" edge="1" parent="1" source="FXCXVvDxTQtwc45PbP1s-{{ $element.GetSrcId}}" target="FXCXVvDxTQtwc45PbP1s-{{ $element.GetDstId}}">
             {{else}}
                 <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{ $element.GetLabel}}" style="endArrow=classic;" edge="1" parent="1" source="FXCXVvDxTQtwc45PbP1s-{{ $element.GetSrcId}}" target="FXCXVvDxTQtwc45PbP1s-{{ $element.GetDstId}}">
@@ -94,7 +95,7 @@
 
             </mxGeometry>
             </mxCell>
-        {{ else if eq $element.getType  "linkedge" }}
+        {{ else if eq $node.GetType  "linkedge" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" style="shape=link;html=1;fontColor=#000000;strokeWidth=6;" edge="1" parent="1" source="FXCXVvDxTQtwc45PbP1s-{{ $element.GetSrcId}}" target="FXCXVvDxTQtwc45PbP1s-{{ $element.GetDstId}}">
             <mxGeometry relative="1" as="geometry">
             </mxGeometry>
