@@ -7,6 +7,7 @@ import (
 
 type DrawioElementInterface interface {
 	GetId() uint
+	SetId()
 }
 
 type DrawioElement struct {
@@ -16,6 +17,13 @@ type DrawioElement struct {
 
 func (di DrawioElement) GetId() uint {
 	return di.id
+}
+
+var id uint = 100
+
+func (di *DrawioElement) SetId() {
+	di.id = id
+	id += 5
 }
 
 // //////////////////////////////////////////////////////////////////////////////
@@ -173,6 +181,8 @@ type TreeNodeInterface interface {
 	AddIconTreeNode(icon TreeNodeInterface)
 	GetChildren() ([]TreeNodeInterface, []TreeNodeInterface)
 	GetType() string
+	GetDrawioElementInterface() DrawioElementInterface
+	SetDrawioInfo()
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -183,6 +193,10 @@ type TreeNode struct {
 	elements []TreeNodeInterface
 }
 
+func (tn *TreeNode) GetDrawioElementInterface() DrawioElementInterface {
+	return tn.DrawioElementInterface
+}
+
 func (tn *TreeNode) GetParent() TreeNodeInterface {
 	return tn.parent
 }
@@ -191,21 +205,12 @@ func (tn *TreeNode) AddIconTreeNode(icon TreeNodeInterface) {
 }
 
 func NewTreeNode(drawioElementInterface DrawioElementInterface, parent TreeNodeInterface) TreeNode {
+	drawioElementInterface.SetId()
 	return TreeNode{drawioElementInterface, parent, []TreeNodeInterface{}}
 
 }
 func (tn *TreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
 	return []TreeNodeInterface{}, []TreeNodeInterface{}
-}
-
-func GetElements(tn TreeNodeInterface) []TreeNodeInterface {
-	subtrees, leafs := tn.GetChildren()
-	ret := append(leafs, tn)
-	for _, element := range subtrees {
-		sub := GetElements(element)
-		ret = append(ret, sub...)
-	}
-	return ret
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -216,13 +221,23 @@ type NetworkTreeNode struct {
 }
 
 func NewNetworkTreeNode() *NetworkTreeNode {
-	return &NetworkTreeNode{NewTreeNode(DrawioSquereElement{}, nil), []TreeNodeInterface{}}
+	return &NetworkTreeNode{NewTreeNode(&DrawioSquereElement{}, nil), []TreeNodeInterface{}}
 }
 
 func (tn *NetworkTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
 	return tn.vpcs, tn.elements
 }
 func (tn *NetworkTreeNode) GetType() string { return "pub" }
+
+func (tn *NetworkTreeNode) SetDrawioInfo() {
+	di := tn.DrawioElementInterface.(*DrawioSquereElement)
+	di.parentId = 0
+	di.name = "network name"
+	di.width = 800
+	di.hight = 800
+	di.x = 40
+	di.y = 40
+}
 
 // ////////////////////////////////////////////////////////////////////////////////////////
 type VpcTreeNode struct {
@@ -232,7 +247,7 @@ type VpcTreeNode struct {
 }
 
 func NewVpcTreeNode(parent *NetworkTreeNode) *VpcTreeNode {
-	vpc := VpcTreeNode{NewTreeNode(DrawioSquereElement{}, parent), []TreeNodeInterface{}, []TreeNodeInterface{}}
+	vpc := VpcTreeNode{NewTreeNode(&DrawioSquereElement{}, parent), []TreeNodeInterface{}, []TreeNodeInterface{}}
 	parent.vpcs = append(parent.vpcs, &vpc)
 	return &vpc
 }
@@ -240,6 +255,16 @@ func (tn *VpcTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) 
 	return tn.zones, append(tn.elements, tn.sgs...)
 }
 func (tn *VpcTreeNode) GetType() string { return "vpc" }
+
+func (tn *VpcTreeNode) SetDrawioInfo() {
+	di := tn.DrawioElementInterface.(*DrawioSquereElement)
+	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
+	di.name = "network name"
+	di.width = 800
+	di.hight = 800
+	di.x = 40
+	di.y = 40
+}
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -249,7 +274,7 @@ type ZoneTreeNode struct {
 }
 
 func NewZoneTreeNode(parent *VpcTreeNode) *ZoneTreeNode {
-	zone := ZoneTreeNode{NewTreeNode(DrawioSquereElement{}, parent), []TreeNodeInterface{}}
+	zone := ZoneTreeNode{NewTreeNode(&DrawioSquereElement{}, parent), []TreeNodeInterface{}}
 	parent.zones = append(parent.zones, &zone)
 	return &zone
 }
@@ -258,6 +283,16 @@ func (tn *ZoneTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface)
 }
 func (tn *ZoneTreeNode) GetType() string { return "zone" }
 
+func (tn *ZoneTreeNode) SetDrawioInfo() {
+	di := tn.DrawioElementInterface.(*DrawioSquereElement)
+	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
+	di.name = "network name"
+	di.width = 600
+	di.hight = 600
+	di.x = 40
+	di.y = 40
+}
+
 ///////////////////////////////////////////////////////////////////////
 
 type SGTreeNode struct {
@@ -265,11 +300,21 @@ type SGTreeNode struct {
 }
 
 func NewSGTreeNode(parent *VpcTreeNode) *SGTreeNode {
-	sg := SGTreeNode{NewTreeNode(DrawioSquereElement{}, parent)}
+	sg := SGTreeNode{NewTreeNode(&DrawioSquereElement{}, parent)}
 	parent.sgs = append(parent.sgs, &sg)
 	return &sg
 }
 func (tn *SGTreeNode) GetType() string { return "sg" }
+
+func (tn *SGTreeNode) SetDrawioInfo() {
+	di := tn.DrawioElementInterface.(*DrawioSquereElement)
+	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
+	di.name = "network name"
+	di.width = 400
+	di.hight = 400
+	di.x = 40
+	di.y = 40
+}
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -278,7 +323,7 @@ type SubnetTreeNode struct {
 }
 
 func NewSubnetTreeNode(parent *ZoneTreeNode) *SubnetTreeNode {
-	subnet := SubnetTreeNode{NewTreeNode(DrawioSubnetElement{}, parent)}
+	subnet := SubnetTreeNode{NewTreeNode(&DrawioSubnetElement{}, parent)}
 	parent.subnets = append(parent.subnets, &subnet)
 	return &subnet
 }
@@ -287,6 +332,16 @@ func (tn *SubnetTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterfac
 	return []TreeNodeInterface{}, tn.elements
 }
 func (tn *SubnetTreeNode) GetType() string { return "subnet" }
+
+func (tn *SubnetTreeNode) SetDrawioInfo() {
+	di := tn.DrawioElementInterface.(*DrawioSubnetElement)
+	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
+	di.name = "subnet name"
+	di.width = 300
+	di.hight = 300
+	di.x = 80
+	di.y = 80
+}
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -301,7 +356,7 @@ type NITreeNode struct {
 }
 
 func NewNITreeNode(parent TreeNodeInterface, sg *SGTreeNode) *NITreeNode {
-	ni := NITreeNode{IconTreeNode{NewTreeNode(DrawioNetworkInterfaceElement{}, parent), sg}}
+	ni := NITreeNode{IconTreeNode{NewTreeNode(&DrawioNetworkInterfaceElement{}, parent), sg}}
 	parent.AddIconTreeNode(&ni)
 	if sg != nil {
 		sg.AddIconTreeNode(&ni)
@@ -310,8 +365,43 @@ func NewNITreeNode(parent TreeNodeInterface, sg *SGTreeNode) *NITreeNode {
 }
 func (tn *NITreeNode) GetType() string { return "ni" }
 
+func (tn *NITreeNode) SetDrawioInfo() {
+	di := tn.DrawioElementInterface.(*DrawioNetworkInterfaceElement)
+	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
+	di.name = "subnet name"
+	di.x = 80
+	di.y = 80
+}
+
 // //////////////////////////////////////////////////////////////////////////////
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// //////////////////////////////////////////////////////////////////////////////
+
+func GetElements(tn TreeNodeInterface) []TreeNodeInterface {
+	subtrees, leafs := tn.GetChildren()
+	ret := append(leafs, tn)
+	for _, element := range subtrees {
+		sub := GetElements(element)
+		ret = append(ret, sub...)
+	}
+	return ret
+}
+
+func resolveDrawioInfo(nodes []TreeNodeInterface) {
+	for _, node := range nodes {
+		node.SetDrawioInfo()
+	}
+}
+
 //	type DrawioInfo struct {
 //		IconSize uint
 //		Elements []DrawioElementInterface
@@ -362,8 +452,9 @@ func main() {
 	NewNITreeNode(network, nil)
 	NewNITreeNode(network, nil)
 
-	elements := GetElements(network)
 	//elements := []TreeNodeInterface{network}
+	elements := GetElements(network)
+	resolveDrawioInfo(elements)
 
 	// elements := []DrawioElementInterface{
 	// 	NewDrawioSquereElement("pub", 40, 40, 1920, 1040, 895, 0, "noname"),
