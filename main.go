@@ -418,11 +418,11 @@ type Row struct {
 	matrix *Matrix
 }
 
-func NewRow(matrix *Matrix, inUse bool, hight uint) *Row {
+func NewRow(matrix *Matrix, hight uint) *Row {
 	r := &Row{}
 	r.hight = hight
 	r.matrix = matrix
-	r.inUse = inUse
+	r.inUse = false
 	return r
 }
 
@@ -433,11 +433,11 @@ type Col struct {
 	matrix *Matrix
 }
 
-func NewCol(matrix *Matrix, inUse bool, width uint) *Col {
+func NewCol(matrix *Matrix, width uint) *Col {
 	c := &Col{}
 	c.width = width
 	c.matrix = matrix
-	c.inUse = inUse
+	c.inUse = false
 	return c
 }
 
@@ -447,47 +447,75 @@ type Position struct {
 	firstCol *Col
 	lastCol  *Col
 }
+type PositionIndexes struct {
+	firstRowIndex int
+	lastRowIndex  int
+	firstColIndex int
+	lastColIndex  int
+}
 
-// getPositionRange(position Position, rows)
+func (i *PositionIndexes) updateIndexes(new_i *PositionIndexes) {
+	if i.firstRowIndex > new_i.firstRowIndex {
+		i.firstRowIndex = new_i.firstRowIndex
+	}
+	if i.firstColIndex > new_i.firstColIndex {
+		i.firstColIndex = new_i.firstColIndex
+	}
+	if i.lastRowIndex < new_i.lastRowIndex {
+		i.lastRowIndex = new_i.lastRowIndex
+	}
+	if i.lastColIndex < new_i.lastColIndex {
+		i.lastColIndex = new_i.lastColIndex
+	}
+
+}
 
 type Matrix struct {
 	rows []*Row
 	cols []*Col
 }
 
-func NewMatrix(nrows uint, ncols uint) *Matrix {
+func NewMatrix(nrows int, ncols int) *Matrix {
 	m := Matrix{}
 	m.rows = make([]*Row, nrows)
 	m.cols = make([]*Col, ncols)
 	for i := range m.rows {
-		m.rows[i] = NewRow(&m, true, subnetHight)
+		m.rows[i] = NewRow(&m, borderDistance)
 	}
 	for i := range m.cols {
-		m.cols[i] = NewCol(&m, true, subnetWidth)
+		m.cols[i] = NewCol(&m, borderDistance)
 	}
 	return &m
 }
 
-func (matrix *Matrix) getPosiotonIndexes(position Position) (int, int, int, int) {
-	var firstRowIndex, lastRowIndex, firstColIndex, lastColIndex int
+func (matrix *Matrix) getPosiotonIndexes(position Position) PositionIndexes {
+	positionIndex := PositionIndexes{}
 	for i, row := range matrix.rows {
 		if row == position.firstRow {
-			firstRowIndex = i
+			positionIndex.firstRowIndex = i
 		}
 		if row == position.lastRow {
-			lastRowIndex = i
+			positionIndex.lastRowIndex = i
 		}
 	}
 	for i, col := range matrix.cols {
 		if col == position.firstCol {
-			firstColIndex = i
+			positionIndex.firstColIndex = i
 		}
 		if col == position.lastCol {
-			lastColIndex = i
+			positionIndex.lastColIndex = i
 		}
 	}
-	return firstRowIndex, lastRowIndex, firstColIndex, lastColIndex
+	return positionIndex
+}
 
+func (matrix *Matrix) getPosioton(positionIndexes PositionIndexes) Position {
+	return Position{
+		matrix.rows[positionIndexes.firstRowIndex],
+		matrix.rows[positionIndexes.lastRowIndex],
+		matrix.cols[positionIndexes.firstColIndex],
+		matrix.cols[positionIndexes.lastColIndex],
+	}
 }
 
 func layout(network TreeNodeInterface) {
@@ -505,94 +533,84 @@ func layout(network TreeNodeInterface) {
 
 	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).SetPosition(Position{m.rows[2], m.rows[3], m.cols[2], m.cols[4]})
 
-	new_rows := make([]*Row, 6*len(m.rows)+1)
-	new_cols := make([]*Col, 6*len(m.cols)+1)
+	new_m := NewMatrix(6*len(m.rows)+1, 6*len(m.cols)+1)
 	for i, row := range m.rows {
-		new_rows[i*6] = NewRow(m, false, borderDistance)
-		new_rows[i*6+1] = NewRow(m, false, borderDistance)
-		new_rows[i*6+2] = NewRow(m, false, borderDistance)
-		new_rows[i*6+3] = row
-		new_rows[i*6+4] = NewRow(m, false, borderDistance)
-		new_rows[i*6+5] = NewRow(m, false, borderDistance)
+		row.inUse = true
+		row.hight = subnetHight
+		new_m.rows[i*6+3] = row
 	}
 	for i, col := range m.cols {
-		new_cols[i*6] = NewCol(m, false, borderDistance)
-		new_cols[i*6+1] = NewCol(m, false, borderDistance)
-		new_cols[i*6+2] = NewCol(m, false, borderDistance)
-		new_cols[i*6+3] = col
-		new_cols[i*6+4] = NewCol(m, false, borderDistance)
-		new_cols[i*6+5] = NewCol(m, false, borderDistance)
+		col.inUse = true
+		col.width = subnetWidth
+		new_m.cols[i*6+3] = col
 	}
-	new_rows[len(new_rows)-1] = NewRow(m, false, borderDistance)
-	new_cols[len(new_cols)-1] = NewCol(m, false, borderDistance)
 
 	for _, vpc := range network.(*NetworkTreeNode).vpcs {
-		firstVpcRowIndex, lastVpcRowIndex, firstVpcColIndex, lastVpcColIndex := len(m.rows), 0, len(m.cols), 0
+		vpcIndexes := PositionIndexes{len(m.rows), 0, len(m.cols), 0}
 		for _, zone := range vpc.(*VpcTreeNode).zones {
-			firstZoneRowIndex, lastZoneRowIndex, firstZoneColIndex, lastZoneColIndex := len(m.rows), 0, len(m.cols), 0
+			zoneIndexes := PositionIndexes{len(m.rows), 0, len(m.cols), 0}
 			for _, subnet := range zone.(*ZoneTreeNode).subnets {
-				firstSubnetRowIndex, lastSubnetRowIndex, firstSubnetColIndex, lastSubnetColIndex := m.getPosiotonIndexes(subnet.GetPosition())
-				if firstZoneRowIndex > firstSubnetRowIndex {
-					firstZoneRowIndex = firstSubnetRowIndex
-				}
-				if firstVpcRowIndex > firstSubnetRowIndex {
-					firstVpcRowIndex = firstSubnetRowIndex
-				}
-				if firstZoneColIndex > firstSubnetColIndex {
-					firstZoneColIndex = firstSubnetColIndex
-				}
-				if firstVpcColIndex > firstSubnetColIndex {
-					firstVpcColIndex = firstSubnetColIndex
-				}
-				if lastZoneRowIndex < lastSubnetRowIndex {
-					lastZoneRowIndex = lastSubnetRowIndex
-				}
-				if lastVpcRowIndex < lastSubnetRowIndex {
-					lastVpcRowIndex = lastSubnetRowIndex
-				}
-				if lastZoneColIndex < lastSubnetColIndex {
-					lastZoneColIndex = lastSubnetColIndex
-				}
-				if lastVpcColIndex < lastSubnetColIndex {
-					lastVpcColIndex = lastSubnetColIndex
-				}
-				new_rows[firstSubnetRowIndex*6+2].inUse = true
-				new_rows[lastSubnetRowIndex*6+4].inUse = true
-				new_cols[firstSubnetColIndex*6+2].inUse = true
-				new_cols[lastSubnetColIndex*6+4].inUse = true
+				subnetIndexes := m.getPosiotonIndexes(subnet.GetPosition())
+				vpcIndexes.updateIndexes(&subnetIndexes)
+				zoneIndexes.updateIndexes(&subnetIndexes)
+				newSubnetIndexes := PositionIndexes{
+					subnetIndexes.firstRowIndex*6 + 3,
+					subnetIndexes.lastRowIndex*6 + 3,
+					subnetIndexes.firstColIndex*6 + 3,
+					subnetIndexes.lastColIndex*6 + 3}
+				new_m.rows[newSubnetIndexes.firstRowIndex-1].inUse = true
+				new_m.rows[newSubnetIndexes.lastRowIndex+1].inUse = true
+				new_m.cols[newSubnetIndexes.firstColIndex-1].inUse = true
+				new_m.cols[newSubnetIndexes.lastColIndex+1].inUse = true
 
 			}
-			new_rows[firstZoneRowIndex*6+1].inUse = true
-			new_cols[firstZoneColIndex*6+1].inUse = true
+			newZoneIndexes := PositionIndexes{
+				zoneIndexes.firstRowIndex*6 + 2,
+				zoneIndexes.lastRowIndex*6 + 4,
+				zoneIndexes.firstColIndex*6 + 2,
+				zoneIndexes.lastColIndex*6 + 4}
 
-			new_rows[firstZoneRowIndex*6+2].inUse = true
-			new_rows[lastZoneRowIndex*6+4].inUse = true
-			new_cols[firstZoneColIndex*6+2].inUse = true
-			new_cols[lastZoneColIndex*6+4].inUse = true
-			zone.SetPosition(Position{new_rows[firstZoneRowIndex*6+2], new_rows[lastZoneRowIndex*6+4], new_cols[firstZoneColIndex*6+2], new_cols[lastZoneColIndex*6+4]})
+			new_m.rows[newZoneIndexes.firstRowIndex-1].inUse = true
+			new_m.cols[newZoneIndexes.firstColIndex-1].inUse = true
+
+			new_m.rows[newZoneIndexes.firstRowIndex].inUse = true
+			new_m.rows[newZoneIndexes.lastRowIndex].inUse = true
+			new_m.cols[newZoneIndexes.firstColIndex].inUse = true
+			new_m.cols[newZoneIndexes.lastColIndex].inUse = true
+
+			zone.SetPosition(new_m.getPosioton(newZoneIndexes))
 		}
-		new_rows[firstVpcRowIndex*6].inUse = true
-		new_cols[firstVpcColIndex*6].inUse = true
+		newVpcIndexes := PositionIndexes{
+			vpcIndexes.firstRowIndex*6 + 1,
+			vpcIndexes.lastRowIndex*6 + 5,
+			vpcIndexes.firstColIndex*6 + 1,
+			vpcIndexes.lastColIndex*6 + 5}
 
-		new_rows[firstVpcRowIndex*6+1].inUse = true
-		new_rows[lastVpcRowIndex*6+5].inUse = true
-		new_cols[firstVpcColIndex*6+1].inUse = true
-		new_cols[lastVpcColIndex*6+5].inUse = true
-		vpc.SetPosition(Position{new_rows[firstVpcRowIndex*6+1], new_rows[lastVpcRowIndex*6+5], new_cols[firstVpcColIndex*6+1], new_cols[lastVpcColIndex*6+5]})
+		new_m.rows[newVpcIndexes.firstRowIndex-1].inUse = true
+		new_m.cols[newVpcIndexes.firstColIndex-1].inUse = true
+
+		new_m.rows[newVpcIndexes.firstRowIndex].inUse = true
+		new_m.rows[newVpcIndexes.lastRowIndex].inUse = true
+		new_m.cols[newVpcIndexes.firstColIndex].inUse = true
+		new_m.cols[newVpcIndexes.lastColIndex].inUse = true
+
+		vpc.SetPosition(new_m.getPosioton(newVpcIndexes))
 	}
+	new_m.rows[len(new_m.rows)-1].inUse = true
+	new_m.cols[len(new_m.cols)-1].inUse = true
+
 	m.rows = []*Row{}
 	m.cols = []*Col{}
-	for _, row := range new_rows {
+	for _, row := range new_m.rows {
 		if row.inUse {
 			m.rows = append(m.rows, row)
 		}
 	}
-	for _, col := range new_cols {
+	for _, col := range new_m.cols {
 		if col.inUse {
 			m.cols = append(m.cols, col)
 		}
 	}
-
 	network.SetPosition(Position{m.rows[0], m.rows[len(m.rows)-1], m.cols[0], m.cols[len(m.cols)-1]})
 
 	var y uint = 0
