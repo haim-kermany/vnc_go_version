@@ -53,6 +53,8 @@ type DrawioSquereElement struct {
 	DrawioLocatedElement
 	width int
 	hight int
+	ip    string
+	key   string
 }
 
 func (di DrawioSquereElement) GetHight() int {
@@ -61,18 +63,10 @@ func (di DrawioSquereElement) GetHight() int {
 func (di DrawioSquereElement) GetWidth() int {
 	return di.width
 }
-
-// //////////////////////////////////////////////////////////////////////////////////////
-type DrawioSubnetElement struct {
-	DrawioSquereElement
-	ip  string
-	key string
-}
-
-func (di DrawioSubnetElement) GetIP() string {
+func (di DrawioSquereElement) GetIP() string {
 	return di.ip
 }
-func (di DrawioSubnetElement) GetKey() string {
+func (di DrawioSquereElement) GetKey() string {
 	return di.key
 }
 
@@ -168,6 +162,7 @@ type TreeNodeInterface interface {
 	GetIconTreeNodes() []TreeNodeInterface
 	GetChildren() ([]TreeNodeInterface, []TreeNodeInterface)
 	GetType() string
+	GetName() string
 	GetDrawioElementInterface() DrawioElementInterface
 	SetPosition(position *Position)
 	GetPosition() *Position
@@ -182,6 +177,8 @@ type TreeNode struct {
 	elements []TreeNodeInterface
 	position *Position
 }
+
+func (tn *TreeNode) GetName() string { return "name?" }
 
 func (tn *TreeNode) GetDrawioElementInterface() DrawioElementInterface {
 	return tn.DrawioElementInterface
@@ -215,13 +212,38 @@ func (tn *TreeNode) GetPosition() *Position {
 
 ///////////////////////////////////////////////////////////////////////
 
-type NetworkTreeNode struct {
+type SquereTreeNode struct {
 	TreeNode
+}
+
+func NewSquereTreeNode(parent TreeNodeInterface) SquereTreeNode {
+	return SquereTreeNode{NewTreeNode(&DrawioSquereElement{}, parent)}
+}
+
+func (tn *SquereTreeNode) SetDrawioInfo() {
+	di := tn.DrawioElementInterface.(*DrawioSquereElement)
+	position := tn.GetPosition()
+	parentPosition := position
+	if tn.GetParent() != nil {
+		parentPosition = tn.GetParent().GetPosition()
+		di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
+	}
+	di.name = tn.GetName()
+	di.width = position.lastCol.width + position.lastCol.x - position.firstCol.x
+	di.hight = position.lastRow.hight + position.lastRow.y - position.firstRow.y
+	di.x = position.firstCol.x - parentPosition.firstCol.x
+	di.y = position.firstRow.y - parentPosition.firstRow.y
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+type NetworkTreeNode struct {
+	SquereTreeNode
 	vpcs []TreeNodeInterface
 }
 
 func NewNetworkTreeNode() *NetworkTreeNode {
-	return &NetworkTreeNode{NewTreeNode(&DrawioSquereElement{}, nil), []TreeNodeInterface{}}
+	return &NetworkTreeNode{NewSquereTreeNode(nil), []TreeNodeInterface{}}
 }
 
 func (tn *NetworkTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
@@ -229,26 +251,15 @@ func (tn *NetworkTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterfa
 }
 func (tn *NetworkTreeNode) GetType() string { return "pub" }
 
-func (tn *NetworkTreeNode) SetDrawioInfo() {
-	di := tn.DrawioElementInterface.(*DrawioSquereElement)
-	position := tn.GetPosition()
-	di.parentId = 0
-	di.name = "network name"
-	di.width = position.lastCol.width + position.lastCol.x - position.firstCol.x
-	di.hight = position.lastRow.hight + position.lastRow.y - position.firstRow.y
-	di.x = int(borderDistance)
-	di.y = int(borderDistance)
-}
-
 // ////////////////////////////////////////////////////////////////////////////////////////
 type VpcTreeNode struct {
-	TreeNode
+	SquereTreeNode
 	zones []TreeNodeInterface
 	sgs   []TreeNodeInterface
 }
 
 func NewVpcTreeNode(parent *NetworkTreeNode) *VpcTreeNode {
-	vpc := VpcTreeNode{NewTreeNode(&DrawioSquereElement{}, parent), []TreeNodeInterface{}, []TreeNodeInterface{}}
+	vpc := VpcTreeNode{NewSquereTreeNode(parent), []TreeNodeInterface{}, []TreeNodeInterface{}}
 	parent.vpcs = append(parent.vpcs, &vpc)
 	return &vpc
 }
@@ -257,27 +268,15 @@ func (tn *VpcTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) 
 }
 func (tn *VpcTreeNode) GetType() string { return "vpc" }
 
-func (tn *VpcTreeNode) SetDrawioInfo() {
-	di := tn.DrawioElementInterface.(*DrawioSquereElement)
-	position := tn.GetPosition()
-	parentPosition := tn.GetParent().GetPosition()
-	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
-	di.name = "vpc name"
-	di.width = position.lastCol.width + position.lastCol.x - position.firstCol.x
-	di.hight = position.lastRow.hight + position.lastRow.y - position.firstRow.y
-	di.x = position.firstCol.x - parentPosition.firstCol.x
-	di.y = position.firstRow.y - parentPosition.firstRow.y
-}
-
 ///////////////////////////////////////////////////////////////////////
 
 type ZoneTreeNode struct {
-	TreeNode
+	SquereTreeNode
 	subnets []TreeNodeInterface
 }
 
 func NewZoneTreeNode(parent *VpcTreeNode) *ZoneTreeNode {
-	zone := ZoneTreeNode{NewTreeNode(&DrawioSquereElement{}, parent), []TreeNodeInterface{}}
+	zone := ZoneTreeNode{NewSquereTreeNode(parent), []TreeNodeInterface{}}
 	parent.zones = append(parent.zones, &zone)
 	return &zone
 }
@@ -286,26 +285,14 @@ func (tn *ZoneTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface)
 }
 func (tn *ZoneTreeNode) GetType() string { return "zone" }
 
-func (tn *ZoneTreeNode) SetDrawioInfo() {
-	di := tn.DrawioElementInterface.(*DrawioSquereElement)
-	position := tn.GetPosition()
-	parentPosition := tn.GetParent().GetPosition()
-	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
-	di.name = "zone name"
-	di.width = position.lastCol.width + position.lastCol.x - position.firstCol.x
-	di.hight = position.lastRow.hight + position.lastRow.y - position.firstRow.y
-	di.x = position.firstCol.x - parentPosition.firstCol.x
-	di.y = position.firstRow.y - parentPosition.firstRow.y
-}
-
 ///////////////////////////////////////////////////////////////////////
 
 type SGTreeNode struct {
-	TreeNode
+	SquereTreeNode
 }
 
 func NewSGTreeNode(parent *VpcTreeNode) *SGTreeNode {
-	sg := SGTreeNode{NewTreeNode(&DrawioSquereElement{}, parent)}
+	sg := SGTreeNode{NewSquereTreeNode(parent)}
 	parent.sgs = append(parent.sgs, &sg)
 	return &sg
 }
@@ -324,11 +311,11 @@ func (tn *SGTreeNode) SetDrawioInfo() {
 /////////////////////////////////////////////////////////////////////////
 
 type SubnetTreeNode struct {
-	TreeNode
+	SquereTreeNode
 }
 
 func NewSubnetTreeNode(parent *ZoneTreeNode) *SubnetTreeNode {
-	subnet := SubnetTreeNode{NewTreeNode(&DrawioSubnetElement{}, parent)}
+	subnet := SubnetTreeNode{NewSquereTreeNode(parent)}
 	parent.subnets = append(parent.subnets, &subnet)
 	return &subnet
 }
@@ -338,23 +325,21 @@ func (tn *SubnetTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterfac
 }
 func (tn *SubnetTreeNode) GetType() string { return "subnet" }
 
-func (tn *SubnetTreeNode) SetDrawioInfo() {
-	di := tn.DrawioElementInterface.(*DrawioSubnetElement)
-	position := tn.GetPosition()
-	parentPosition := tn.GetParent().GetPosition()
-	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
-	di.name = "subnet name"
-	di.width = position.lastCol.width + position.lastCol.x - position.firstCol.x
-	di.hight = position.lastRow.hight + position.lastRow.y - position.firstRow.y
-	di.x = position.firstCol.x - parentPosition.firstCol.x
-	di.y = position.firstRow.y - parentPosition.firstRow.y
-}
-
 /////////////////////////////////////////////////////////////////////////
 
 type IconTreeNode struct {
 	TreeNode
 	sg TreeNodeInterface
+}
+
+func (tn *IconTreeNode) SetDrawioInfo() {
+	di := tn.DrawioElementInterface.(*DrawioNetworkInterfaceElement)
+	position := tn.GetPosition()
+	parentPosition := tn.GetParent().GetPosition()
+	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
+	di.name = "icon name"
+	di.x = position.firstCol.x - parentPosition.firstCol.x + position.firstCol.width/2 - iconSize/2 + position.x_offset
+	di.y = position.firstRow.y - parentPosition.firstRow.y + position.firstRow.hight/2 - iconSize/2 + position.y_offset
 }
 
 // ///////////////////////////////////////////
@@ -371,16 +356,6 @@ func NewNITreeNode(parent TreeNodeInterface, sg *SGTreeNode) *NITreeNode {
 	return &ni
 }
 func (tn *NITreeNode) GetType() string { return "ni" }
-
-func (tn *NITreeNode) SetDrawioInfo() {
-	di := tn.DrawioElementInterface.(*DrawioNetworkInterfaceElement)
-	position := tn.GetPosition()
-	parentPosition := tn.GetParent().GetPosition()
-	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
-	di.name = "icon name"
-	di.x = position.firstCol.x - parentPosition.firstCol.x + position.firstCol.width/2 - iconSize/2 + position.x_offset
-	di.y = position.firstRow.y - parentPosition.firstRow.y + position.firstRow.hight/2 - iconSize/2 + position.y_offset
-}
 
 // //////////////////////////////////////////////////////////////////////////////
 //
