@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"os"
 	"text/template"
 )
@@ -492,6 +493,23 @@ func (matrix *Matrix) getPosioton(positionIndexes PositionIndexes) *Position {
 	)
 }
 
+func (matrix *Matrix) removeUnused() {
+	rows := []*Row{}
+	cols := []*Col{}
+	for _, row := range matrix.rows {
+		if row.inUse {
+			rows = append(rows, row)
+		}
+	}
+	for _, col := range matrix.cols {
+		if col.inUse {
+			cols = append(cols, col)
+		}
+	}
+	matrix.rows = rows
+	matrix.cols = cols
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //////////
 //////////
@@ -570,15 +588,40 @@ func create_network() TreeNodeInterface {
 }
 
 func layout(network TreeNodeInterface) {
-	m := LayoutSubnets(network)
-	AddBorders(network, m)
+	m := LayoutIcons(network)
+	m = AddBorders(network, m)
 	SetLayersSize(network)
 	SetLayersLocation(m)
 	setIconsPositions(network, m)
 	resolveDrawioInfo(network)
 }
 
-func LayoutSubnets(network TreeNodeInterface) *Matrix {
+func LayoutIcons(network TreeNodeInterface) *Matrix {
+	m := NewMatrix(100, 100)
+	indexes := PositionIndexes{}
+	for _, vpc := range network.(*NetworkTreeNode).vpcs {
+		indexes.firstRowIndex = 0
+		indexes.lastRowIndex = 0
+		for _, zone := range vpc.(*VpcTreeNode).zones {
+			indexes.firstRowIndex = 0
+			indexes.lastRowIndex = 0
+			for _, subnet := range zone.(*ZoneTreeNode).subnets {
+				for i, icon := range subnet.GetIconTreeNodes() {
+					icon.SetPosition(m.getPosioton(indexes))
+					if math.Mod(float64(i), 2) != 0 || i == len(subnet.GetIconTreeNodes())-1 {
+						indexes.firstRowIndex++
+						indexes.lastRowIndex++
+					}
+				}
+			}
+			indexes.firstColIndex++
+			indexes.lastColIndex++
+		}
+	}
+	return m
+}
+
+func LayoutIcons2(network TreeNodeInterface) *Matrix {
 	m := NewMatrix(4, 5)
 	network.(*NetworkTreeNode).vpcs[0].(*VpcTreeNode).zones[0].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[0].SetPosition(NewPosition(m.rows[0], m.rows[0], m.cols[0], m.cols[0]))
 	network.(*NetworkTreeNode).vpcs[0].(*VpcTreeNode).zones[0].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[1].SetPosition(NewPosition(m.rows[0], m.rows[0], m.cols[0], m.cols[0]))
@@ -611,7 +654,7 @@ func LayoutSubnets(network TreeNodeInterface) *Matrix {
 	return m
 }
 
-func AddBorders(network TreeNodeInterface, m *Matrix) {
+func AddBorders(network TreeNodeInterface, m *Matrix) *Matrix {
 	new_m := NewMatrix(6*len(m.rows)+1, 6*len(m.cols)+1)
 	for i, row := range m.rows {
 		row.inUse = true
@@ -683,20 +726,9 @@ func AddBorders(network TreeNodeInterface, m *Matrix) {
 	}
 	new_m.rows[len(new_m.rows)-1].inUse = true
 	new_m.cols[len(new_m.cols)-1].inUse = true
-
-	m.rows = []*Row{}
-	m.cols = []*Col{}
-	for _, row := range new_m.rows {
-		if row.inUse {
-			m.rows = append(m.rows, row)
-		}
-	}
-	for _, col := range new_m.cols {
-		if col.inUse {
-			m.cols = append(m.cols, col)
-		}
-	}
-	network.SetPosition(NewPosition(m.rows[0], m.rows[len(m.rows)-1], m.cols[0], m.cols[len(m.cols)-1]))
+	new_m.removeUnused()
+	network.SetPosition(NewPosition(new_m.rows[0], new_m.rows[len(m.rows)-1], new_m.cols[0], new_m.cols[len(m.cols)-1]))
+	return new_m
 }
 
 func SetLayersSize(network TreeNodeInterface) {
