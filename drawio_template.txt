@@ -47,7 +47,11 @@
             <mxGeometry width="{{$IconSize}}" height="{{$IconSize}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
         {{ else if eq $node.GetType  "ni" }}
-            <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/devops/release_management.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
+            {{ if $node.HasVsi }}
+                <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="NI" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;labelBorderColor=none;horizontal=1;resizable=0;rotatable=0;expand=0;fillColor=#FF8000;strokeColor=none;fontColor=#FFFFFF;fontSize=27;fontFamily=Times New Roman;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
+            {{ else }}
+                <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" value="{{$element.GetName}}" style="aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;fontColor=#4277BB;labelBackgroundColor=#ffffff;fontSize=12;spacingTop=3;image;image=img/lib/ibm/vpc/Instance.svg;" parent="FXCXVvDxTQtwc45PbP1s-{{$element.GetParentId}}" vertex="1">
+            {{ end }}
             <mxGeometry width="{{$IconSize}}" height="{{$IconSize}}" x="{{$element.GetX}}" y="{{$element.GetY}}" as="geometry"/>
             </mxCell>
             {{ if ne $element.GetSvi "" }}
@@ -95,7 +99,7 @@
 
             </mxGeometry>
             </mxCell>
-        {{ else if eq $node.GetType  "linkedge" }}
+        {{ else if eq $node.GetType  "vsi_connector" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId}}" style="shape=link;html=1;fontColor=#000000;strokeWidth=6;" edge="1" parent="1" source="FXCXVvDxTQtwc45PbP1s-{{ $element.GetSrcId}}" target="FXCXVvDxTQtwc45PbP1s-{{ $element.GetDstId}}">
             <mxGeometry relative="1" as="geometry">
             </mxGeometry>

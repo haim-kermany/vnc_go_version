@@ -1,362 +1,9 @@
 package main
 
 import (
-	"math"
 	"os"
 	"text/template"
 )
-
-type DrawioElementInterface interface {
-	GetId() uint
-	SetId()
-}
-
-type DrawioElement struct {
-	deType string
-	id     uint
-}
-
-func (di DrawioElement) GetId() uint {
-	return di.id
-}
-
-var id uint = 100
-
-func (di *DrawioElement) SetId() {
-	di.id = id
-	id += 5
-}
-
-// //////////////////////////////////////////////////////////////////////////////
-type DrawioLocatedElement struct {
-	DrawioElement
-	parentId uint
-	x        int
-	y        int
-	name     string
-}
-
-func (di DrawioLocatedElement) GetX() int {
-	return di.x
-}
-func (di DrawioLocatedElement) GetY() int {
-	return di.y
-}
-func (di DrawioLocatedElement) GetParentId() uint {
-	return di.parentId
-}
-func (di DrawioLocatedElement) GetName() string {
-	return di.name
-}
-
-// //////////////////////////////////////////////////////////////////////////////
-type DrawioSquereElement struct {
-	DrawioLocatedElement
-	width int
-	hight int
-	ip    string
-	key   string
-}
-
-func (di DrawioSquereElement) GetHight() int {
-	return di.hight
-}
-func (di DrawioSquereElement) GetWidth() int {
-	return di.width
-}
-func (di DrawioSquereElement) GetIP() string {
-	return di.ip
-}
-func (di DrawioSquereElement) GetKey() string {
-	return di.key
-}
-
-// ///////////////////////////////////////////////////////////////////////////////////////////////
-type DrawioIconElement struct {
-	DrawioLocatedElement
-}
-
-// ///////////////////////////////////////////////////////////////////////////////////////////////
-type DrawioNetworkInterfaceElement struct {
-	DrawioIconElement
-	floating_ip string
-	svi         string
-}
-
-func (di DrawioNetworkInterfaceElement) GetFip() string {
-	return di.floating_ip
-}
-
-func (di DrawioNetworkInterfaceElement) GetSvi() string {
-	return di.svi
-}
-
-type DrawioConnectElementPoint struct {
-	x int
-	y int
-}
-
-func (di DrawioConnectElementPoint) GetX() int {
-	return di.x
-}
-func (di DrawioConnectElementPoint) GetY() int {
-	return di.y
-}
-
-// //////////////////////////////////////////////////////////////////////////////
-type DrawioConnectElement struct {
-	DrawioElement
-	srcId  uint
-	dstId  uint
-	label  string
-	points []DrawioConnectElementPoint
-}
-
-func (di DrawioConnectElement) GetSrcId() uint {
-	return di.srcId
-}
-func (di DrawioConnectElement) GetDstId() uint {
-	return di.dstId
-}
-func (di DrawioConnectElement) GetLabel() string {
-	return di.label
-}
-
-func (di DrawioConnectElement) GetPoints() []DrawioConnectElementPoint {
-	return di.points
-}
-
-func NewDrawioConnectElement(etype string, id uint, srcid uint, dstid uint, label string, points []DrawioConnectElementPoint) *DrawioConnectElement {
-	return &DrawioConnectElement{DrawioElement{etype, id}, srcid, dstid, label, points}
-}
-
-///////////////////////////////////////
-////
-///
-//
-//
-//
-//
-////
-///
-//
-//
-//
-//
-////
-///
-//
-//
-//
-//
-////
-///
-//
-//
-//
-//
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-type TreeNodeInterface interface {
-	GetParent() TreeNodeInterface
-	AddIconTreeNode(icon TreeNodeInterface)
-	GetIconTreeNodes() []TreeNodeInterface
-	GetChildren() ([]TreeNodeInterface, []TreeNodeInterface)
-	GetType() string
-	GetName() string
-	GetDrawioElementInterface() DrawioElementInterface
-	SetPosition(position *Position)
-	GetPosition() *Position
-	SetDrawioInfo()
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-type TreeNode struct {
-	DrawioElementInterface
-	parent   TreeNodeInterface
-	elements []TreeNodeInterface
-	position *Position
-}
-
-func (tn *TreeNode) GetName() string { return "name?" }
-
-func (tn *TreeNode) GetDrawioElementInterface() DrawioElementInterface {
-	return tn.DrawioElementInterface
-}
-
-func (tn *TreeNode) GetParent() TreeNodeInterface {
-	return tn.parent
-}
-func (tn *TreeNode) AddIconTreeNode(icon TreeNodeInterface) {
-	tn.elements = append(tn.elements, icon)
-}
-func (tn *TreeNode) GetIconTreeNodes() []TreeNodeInterface {
-	return tn.elements
-}
-
-func NewTreeNode(drawioElementInterface DrawioElementInterface, parent TreeNodeInterface) TreeNode {
-	drawioElementInterface.SetId()
-	return TreeNode{drawioElementInterface, parent, []TreeNodeInterface{}, &Position{}}
-
-}
-func (tn *TreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
-	return []TreeNodeInterface{}, []TreeNodeInterface{}
-}
-
-func (tn *TreeNode) SetPosition(position *Position) {
-	tn.position = position
-}
-func (tn *TreeNode) GetPosition() *Position {
-	return tn.position
-}
-
-///////////////////////////////////////////////////////////////////////
-
-type SquereTreeNode struct {
-	TreeNode
-}
-
-func NewSquereTreeNode(parent TreeNodeInterface) SquereTreeNode {
-	return SquereTreeNode{NewTreeNode(&DrawioSquereElement{}, parent)}
-}
-
-func (tn *SquereTreeNode) SetDrawioInfo() {
-	di := tn.DrawioElementInterface.(*DrawioSquereElement)
-	position := tn.GetPosition()
-	parentPosition := position
-	if tn.GetParent() != nil {
-		parentPosition = tn.GetParent().GetPosition()
-		di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
-	}
-	di.name = tn.GetName()
-	di.width = position.lastCol.width + position.lastCol.x - position.firstCol.x
-	di.hight = position.lastRow.hight + position.lastRow.y - position.firstRow.y
-	di.x = position.firstCol.x - parentPosition.firstCol.x
-	di.y = position.firstRow.y - parentPosition.firstRow.y
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-type NetworkTreeNode struct {
-	SquereTreeNode
-	vpcs []TreeNodeInterface
-}
-
-func NewNetworkTreeNode() *NetworkTreeNode {
-	return &NetworkTreeNode{NewSquereTreeNode(nil), []TreeNodeInterface{}}
-}
-
-func (tn *NetworkTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
-	return tn.vpcs, tn.elements
-}
-func (tn *NetworkTreeNode) GetType() string { return "pub" }
-
-// ////////////////////////////////////////////////////////////////////////////////////////
-type VpcTreeNode struct {
-	SquereTreeNode
-	zones []TreeNodeInterface
-	sgs   []TreeNodeInterface
-}
-
-func NewVpcTreeNode(parent *NetworkTreeNode) *VpcTreeNode {
-	vpc := VpcTreeNode{NewSquereTreeNode(parent), []TreeNodeInterface{}, []TreeNodeInterface{}}
-	parent.vpcs = append(parent.vpcs, &vpc)
-	return &vpc
-}
-func (tn *VpcTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
-	return tn.zones, append(tn.elements, tn.sgs...)
-}
-func (tn *VpcTreeNode) GetType() string { return "vpc" }
-
-///////////////////////////////////////////////////////////////////////
-
-type ZoneTreeNode struct {
-	SquereTreeNode
-	subnets []TreeNodeInterface
-}
-
-func NewZoneTreeNode(parent *VpcTreeNode) *ZoneTreeNode {
-	zone := ZoneTreeNode{NewSquereTreeNode(parent), []TreeNodeInterface{}}
-	parent.zones = append(parent.zones, &zone)
-	return &zone
-}
-func (tn *ZoneTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
-	return tn.subnets, tn.elements
-}
-func (tn *ZoneTreeNode) GetType() string { return "zone" }
-
-///////////////////////////////////////////////////////////////////////
-
-type SGTreeNode struct {
-	SquereTreeNode
-}
-
-func NewSGTreeNode(parent *VpcTreeNode) *SGTreeNode {
-	sg := SGTreeNode{NewSquereTreeNode(parent)}
-	parent.sgs = append(parent.sgs, &sg)
-	return &sg
-}
-func (tn *SGTreeNode) GetType() string { return "sg" }
-
-func (tn *SGTreeNode) SetDrawioInfo() {
-	di := tn.DrawioElementInterface.(*DrawioSquereElement)
-	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
-	di.name = "sg name"
-	di.width = 400
-	di.hight = 400
-	di.x = 40
-	di.y = 40
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-type SubnetTreeNode struct {
-	SquereTreeNode
-}
-
-func NewSubnetTreeNode(parent *ZoneTreeNode) *SubnetTreeNode {
-	subnet := SubnetTreeNode{NewSquereTreeNode(parent)}
-	parent.subnets = append(parent.subnets, &subnet)
-	return &subnet
-}
-
-func (tn *SubnetTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
-	return []TreeNodeInterface{}, tn.elements
-}
-func (tn *SubnetTreeNode) GetType() string { return "subnet" }
-
-/////////////////////////////////////////////////////////////////////////
-
-type IconTreeNode struct {
-	TreeNode
-	sg TreeNodeInterface
-}
-
-func (tn *IconTreeNode) SetDrawioInfo() {
-	di := tn.DrawioElementInterface.(*DrawioNetworkInterfaceElement)
-	position := tn.GetPosition()
-	parentPosition := tn.GetParent().GetPosition()
-	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
-	di.name = "icon name"
-	di.x = position.firstCol.x - parentPosition.firstCol.x + position.firstCol.width/2 - iconSize/2 + position.x_offset
-	di.y = position.firstRow.y - parentPosition.firstRow.y + position.firstRow.hight/2 - iconSize/2 + position.y_offset
-}
-
-// ///////////////////////////////////////////
-type NITreeNode struct {
-	IconTreeNode
-}
-
-func NewNITreeNode(parent TreeNodeInterface, sg *SGTreeNode) *NITreeNode {
-	ni := NITreeNode{IconTreeNode{NewTreeNode(&DrawioNetworkInterfaceElement{}, parent), sg}}
-	parent.AddIconTreeNode(&ni)
-	if sg != nil {
-		sg.AddIconTreeNode(&ni)
-	}
-	return &ni
-}
-func (tn *NITreeNode) GetType() string { return "ni" }
 
 // //////////////////////////////////////////////////////////////////////////////
 //
@@ -522,80 +169,15 @@ func (matrix *Matrix) removeUnused() {
 //////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-func create_network() TreeNodeInterface {
-	network := NewNetworkTreeNode()
-	vpc1 := NewVpcTreeNode(network)
-	vpc2 := NewVpcTreeNode(network)
-	zone11 := NewZoneTreeNode(vpc1)
-	zone12 := NewZoneTreeNode(vpc1)
-	zone21 := NewZoneTreeNode(vpc2)
-	zone22 := NewZoneTreeNode(vpc2)
-	zone23 := NewZoneTreeNode(vpc2)
-
-	sg11 := NewSGTreeNode(vpc1)
-	sg12 := NewSGTreeNode(vpc1)
-	sg21 := NewSGTreeNode(vpc2)
-	sg22 := NewSGTreeNode(vpc2)
-
-	subnet111 := NewSubnetTreeNode(zone11)
-	subnet112 := NewSubnetTreeNode(zone11)
-
-	subnet121 := NewSubnetTreeNode(zone12)
-
-	subnet211 := NewSubnetTreeNode(zone21)
-
-	subnet221 := NewSubnetTreeNode(zone22)
-	subnet222 := NewSubnetTreeNode(zone22)
-	subnet231 := NewSubnetTreeNode(zone23)
-
-	NewNITreeNode(subnet111, sg11)
-	NewNITreeNode(subnet111, sg12)
-	NewNITreeNode(subnet112, sg12)
-	NewNITreeNode(subnet121, sg11)
-
-	NewNITreeNode(subnet211, sg21)
-	NewNITreeNode(subnet211, sg21)
-	NewNITreeNode(subnet211, sg21)
-
-	NewNITreeNode(subnet221, sg22)
-	NewNITreeNode(subnet222, sg22)
-	NewNITreeNode(subnet222, sg22)
-	NewNITreeNode(subnet222, sg22)
-	NewNITreeNode(subnet222, sg22)
-
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(subnet231, sg22)
-	NewNITreeNode(zone11, nil)
-	NewNITreeNode(zone12, nil)
-	NewNITreeNode(zone21, nil)
-	NewNITreeNode(zone22, nil)
-
-	NewNITreeNode(vpc1, nil)
-	NewNITreeNode(vpc2, nil)
-	NewNITreeNode(network, nil)
-	NewNITreeNode(network, nil)
-	NewNITreeNode(network, nil)
-	NewNITreeNode(network, nil)
-	return network
-}
-
 func layout(network TreeNodeInterface) {
 	m := LayoutIcons(network)
 	m = AddBorders(network, m)
-	SetLayersSize(network)
-	SetLayersLocation(m)
 	setIconsPositions(network, m)
+	SetLayersLocation(m)
 	resolveDrawioInfo(network)
 }
 
+// ///////////////////////////////////////////////////////////////
 func LayoutIcons(network TreeNodeInterface) *Matrix {
 	m := NewMatrix(100, 100)
 	indexes := PositionIndexes{}
@@ -606,12 +188,14 @@ func LayoutIcons(network TreeNodeInterface) *Matrix {
 			indexes.firstRowIndex = 0
 			indexes.lastRowIndex = 0
 			for _, subnet := range zone.(*ZoneTreeNode).subnets {
+				rowFull := false
 				for i, icon := range subnet.GetIconTreeNodes() {
 					icon.SetPosition(m.getPosioton(indexes))
-					if math.Mod(float64(i), 2) != 0 || i == len(subnet.GetIconTreeNodes())-1 {
+					if rowFull || i == len(subnet.GetIconTreeNodes())-1 {
 						indexes.firstRowIndex++
 						indexes.lastRowIndex++
 					}
+					rowFull = !rowFull
 				}
 			}
 			indexes.firstColIndex++
@@ -621,39 +205,7 @@ func LayoutIcons(network TreeNodeInterface) *Matrix {
 	return m
 }
 
-func LayoutIcons2(network TreeNodeInterface) *Matrix {
-	m := NewMatrix(4, 5)
-	network.(*NetworkTreeNode).vpcs[0].(*VpcTreeNode).zones[0].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[0].SetPosition(NewPosition(m.rows[0], m.rows[0], m.cols[0], m.cols[0]))
-	network.(*NetworkTreeNode).vpcs[0].(*VpcTreeNode).zones[0].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[1].SetPosition(NewPosition(m.rows[0], m.rows[0], m.cols[0], m.cols[0]))
-
-	network.(*NetworkTreeNode).vpcs[0].(*VpcTreeNode).zones[0].(*ZoneTreeNode).subnets[1].(*SubnetTreeNode).elements[0].SetPosition(NewPosition(m.rows[1], m.rows[1], m.cols[0], m.cols[0]))
-
-	network.(*NetworkTreeNode).vpcs[0].(*VpcTreeNode).zones[1].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[0].SetPosition(NewPosition(m.rows[0], m.rows[0], m.cols[1], m.cols[1]))
-
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[0].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[0].SetPosition(NewPosition(m.rows[0], m.rows[0], m.cols[2], m.cols[2]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[0].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[1].SetPosition(NewPosition(m.rows[0], m.rows[0], m.cols[2], m.cols[2]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[0].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[2].SetPosition(NewPosition(m.rows[1], m.rows[1], m.cols[2], m.cols[2]))
-
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[1].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[0].SetPosition(NewPosition(m.rows[0], m.rows[0], m.cols[3], m.cols[3]))
-
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[1].(*ZoneTreeNode).subnets[1].(*SubnetTreeNode).elements[0].SetPosition(NewPosition(m.rows[1], m.rows[1], m.cols[3], m.cols[3]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[1].(*ZoneTreeNode).subnets[1].(*SubnetTreeNode).elements[1].SetPosition(NewPosition(m.rows[1], m.rows[1], m.cols[3], m.cols[3]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[1].(*ZoneTreeNode).subnets[1].(*SubnetTreeNode).elements[2].SetPosition(NewPosition(m.rows[1], m.rows[1], m.cols[4], m.cols[4]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[1].(*ZoneTreeNode).subnets[1].(*SubnetTreeNode).elements[3].SetPosition(NewPosition(m.rows[1], m.rows[1], m.cols[4], m.cols[4]))
-
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[0].SetPosition(NewPosition(m.rows[2], m.rows[2], m.cols[2], m.cols[2]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[1].SetPosition(NewPosition(m.rows[2], m.rows[2], m.cols[2], m.cols[2]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[2].SetPosition(NewPosition(m.rows[2], m.rows[2], m.cols[3], m.cols[3]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[3].SetPosition(NewPosition(m.rows[2], m.rows[2], m.cols[4], m.cols[4]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[4].SetPosition(NewPosition(m.rows[3], m.rows[3], m.cols[2], m.cols[2]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[5].SetPosition(NewPosition(m.rows[3], m.rows[3], m.cols[2], m.cols[2]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[6].SetPosition(NewPosition(m.rows[3], m.rows[3], m.cols[3], m.cols[3]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[7].SetPosition(NewPosition(m.rows[3], m.rows[3], m.cols[3], m.cols[3]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[8].SetPosition(NewPosition(m.rows[3], m.rows[3], m.cols[4], m.cols[4]))
-	network.(*NetworkTreeNode).vpcs[1].(*VpcTreeNode).zones[2].(*ZoneTreeNode).subnets[0].(*SubnetTreeNode).elements[9].SetPosition(NewPosition(m.rows[3], m.rows[3], m.cols[4], m.cols[4]))
-	return m
-}
-
+// ///////////////////////////////////////////////////////////////////////////////////////
 func AddBorders(network TreeNodeInterface, m *Matrix) *Matrix {
 	new_m := NewMatrix(6*len(m.rows)+1, 6*len(m.cols)+1)
 	for i, row := range m.rows {
@@ -731,36 +283,15 @@ func AddBorders(network TreeNodeInterface, m *Matrix) *Matrix {
 	return new_m
 }
 
-func SetLayersSize(network TreeNodeInterface) {
-	if len(network.GetIconTreeNodes()) > 0 {
-		network.GetPosition().firstCol.width = iconSpace
-	}
+// ////////////////////////////////////////////////////////////////////////////////////////
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+func setIconsPositions(network TreeNodeInterface, m *Matrix) {
 	for _, vpc := range network.(*NetworkTreeNode).vpcs {
+		icons := vpc.GetIconTreeNodes()
 		if len(vpc.GetIconTreeNodes()) > 0 {
 			vpc.GetPosition().firstRow.hight = iconSpace
 		}
-		for _, zone := range vpc.(*VpcTreeNode).zones {
-			if len(zone.GetIconTreeNodes()) > 0 {
-				zone.GetPosition().firstCol.width = iconSpace
-			}
-		}
-	}
-}
-
-func setIconsPositions(network TreeNodeInterface, m *Matrix) {
-	icons := network.GetIconTreeNodes()
-	iconIndex := 0
-	for ri, row := range m.rows {
-		if iconIndex >= len(icons) {
-			break
-		}
-		if row.hight >= iconSpace || (ri > 0 && m.rows[ri-1].hight >= iconSpace) {
-			icons[iconIndex].SetPosition(NewPosition(row, row, m.cols[0], m.cols[0]))
-			iconIndex++
-		}
-	}
-	for _, vpc := range network.(*NetworkTreeNode).vpcs {
-		icons := vpc.GetIconTreeNodes()
 		iconIndex := 0
 		indexes := m.getPosiotonIndexes(vpc.GetPosition())
 		for ci := indexes.firstColIndex; ci <= indexes.lastColIndex && iconIndex < len(icons); ci++ {
@@ -771,12 +302,31 @@ func setIconsPositions(network TreeNodeInterface, m *Matrix) {
 		}
 		for _, zone := range vpc.(*VpcTreeNode).zones {
 			icons := zone.GetIconTreeNodes()
-			iconIndex := 0
-			indexes := m.getPosiotonIndexes(zone.GetPosition())
-			for ri := indexes.firstRowIndex; ri <= indexes.lastRowIndex && iconIndex < len(icons); ri++ {
-				if m.rows[ri].hight >= iconSpace || (ri > indexes.firstRowIndex && m.rows[ri-1].hight >= iconSpace) {
-					icons[iconIndex].SetPosition(NewPosition(m.rows[ri], m.rows[ri], m.cols[indexes.firstColIndex], m.cols[indexes.firstColIndex]))
-					iconIndex++
+			for _, icon := range icons {
+				if icon.GetType() == "vsi" {
+					vsiSubents := map[TreeNodeInterface]bool{}
+					for _, ni := range icon.(*VsiTreeNode).nis {
+						vsiSubents[ni.GetParent()] = true
+					}
+					if len(vsiSubents) == 1 {
+						subnet := icon.(*VsiTreeNode).nis[0].GetParent()
+						icon.SetPosition(NewPosition(subnet.GetPosition().firstRow, subnet.GetPosition().firstRow, subnet.GetPosition().firstCol, subnet.GetPosition().firstCol))
+						icon.GetPosition().y_offset = iconSize
+					} else {
+						subnet := icon.(*VsiTreeNode).nis[0].GetParent()
+						icon.SetPosition(NewPosition(subnet.GetPosition().firstRow, subnet.GetPosition().firstRow, subnet.GetPosition().firstCol, subnet.GetPosition().firstCol))
+						icon.GetPosition().y_offset = subnetHight / 2
+						icon.GetPosition().x_offset = subnetWidth / 2
+
+					}
+
+				} else if icon.GetType() == "gateway" {
+					col := zone.(*ZoneTreeNode).subnets[0].GetPosition().firstCol
+					row := zone.GetPosition().firstRow
+					zone.GetPosition().firstRow.hight = iconSpace
+					icon.SetPosition(NewPosition(row, row, col, col))
+					icon.GetPosition().x_offset -= subnetWidth/2 - iconSize/2
+
 				}
 			}
 			for _, subnet := range zone.(*ZoneTreeNode).subnets {
@@ -794,6 +344,20 @@ func setIconsPositions(network TreeNodeInterface, m *Matrix) {
 			}
 		}
 	}
+	icons := network.GetIconTreeNodes()
+	iconIndex := 0
+	if len(icons) > 0 {
+		network.GetPosition().firstCol.width = iconSpace
+	}
+	for ri, row := range m.rows {
+		if iconIndex >= len(icons) {
+			break
+		}
+		if row.hight >= iconSpace || (ri > 0 && m.rows[ri-1].hight >= iconSpace) {
+			icons[iconIndex].SetPosition(NewPosition(row, row, m.cols[0], m.cols[0]))
+			iconIndex++
+		}
+	}
 }
 
 func setSGPositions(network TreeNodeInterface) {
@@ -806,6 +370,9 @@ func setSGPositions(network TreeNodeInterface) {
 
 func resolveDrawioInfo(network TreeNodeInterface) {
 	network.SetDrawioInfo()
+	for _, conn := range network.(*NetworkTreeNode).connections {
+		conn.SetDrawioInfo()
+	}
 	for _, icon := range network.GetIconTreeNodes() {
 		icon.SetDrawioInfo()
 	}
@@ -853,16 +420,6 @@ func SetLayersLocation(m *Matrix) {
 //
 //
 // //////////////////////////////////////////////////////////////////////////////
-
-func GetElements(tn TreeNodeInterface) []TreeNodeInterface {
-	subtrees, leafs := tn.GetChildren()
-	ret := append(leafs, tn)
-	for _, element := range subtrees {
-		sub := GetElements(element)
-		ret = append(ret, sub...)
-	}
-	return ret
-}
 
 func main() {
 	network := create_network()
