@@ -6,12 +6,16 @@ type DrawioElementInterface interface {
 }
 
 type DrawioElement struct {
-	deType string
-	id     uint
+	parentId uint
+	deType   string
+	id       uint
 }
 
-func (di DrawioElement) GetId() uint {
+func (di *DrawioElement) GetId() uint {
 	return di.id
+}
+func (di *DrawioElement) GetParentId() uint {
+	return di.parentId
 }
 
 var id uint = 100
@@ -24,22 +28,18 @@ func (di *DrawioElement) SetId() {
 // //////////////////////////////////////////////////////////////////////////////
 type DrawioLocatedElement struct {
 	DrawioElement
-	parentId uint
-	x        int
-	y        int
-	name     string
+	x    int
+	y    int
+	name string
 }
 
-func (di DrawioLocatedElement) GetX() int {
+func (di *DrawioLocatedElement) GetX() int {
 	return di.x
 }
-func (di DrawioLocatedElement) GetY() int {
+func (di *DrawioLocatedElement) GetY() int {
 	return di.y
 }
-func (di DrawioLocatedElement) GetParentId() uint {
-	return di.parentId
-}
-func (di DrawioLocatedElement) GetName() string {
+func (di *DrawioLocatedElement) GetName() string {
 	return di.name
 }
 
@@ -52,16 +52,16 @@ type DrawioSquereElement struct {
 	key   string
 }
 
-func (di DrawioSquereElement) GetHight() int {
+func (di *DrawioSquereElement) GetHight() int {
 	return di.hight
 }
-func (di DrawioSquereElement) GetWidth() int {
+func (di *DrawioSquereElement) GetWidth() int {
 	return di.width
 }
-func (di DrawioSquereElement) GetIP() string {
+func (di *DrawioSquereElement) GetIP() string {
 	return di.ip
 }
-func (di DrawioSquereElement) GetKey() string {
+func (di *DrawioSquereElement) GetKey() string {
 	return di.key
 }
 
@@ -72,11 +72,11 @@ type DrawioIconElement struct {
 	svi         string
 }
 
-func (di DrawioIconElement) GetFip() string {
+func (di *DrawioIconElement) GetFip() string {
 	return di.floating_ip
 }
 
-func (di DrawioIconElement) GetSvi() string {
+func (di *DrawioIconElement) GetSvi() string {
 	return di.svi
 }
 
@@ -86,10 +86,10 @@ type DrawioConnectElementPoint struct {
 	y int
 }
 
-func (di DrawioConnectElementPoint) GetX() int {
+func (di *DrawioConnectElementPoint) GetX() int {
 	return di.x
 }
-func (di DrawioConnectElementPoint) GetY() int {
+func (di *DrawioConnectElementPoint) GetY() int {
 	return di.y
 }
 
@@ -102,18 +102,21 @@ type DrawioConnectElement struct {
 	points []DrawioConnectElementPoint
 }
 
-func (di DrawioConnectElement) GetSrcId() uint {
+func (di *DrawioConnectElement) GetSrcId() uint {
 	return di.srcId
 }
-func (di DrawioConnectElement) GetDstId() uint {
+func (di *DrawioConnectElement) GetDstId() uint {
 	return di.dstId
 }
-func (di DrawioConnectElement) GetLabel() string {
+func (di *DrawioConnectElement) GetLabel() string {
 	return di.label
 }
 
-func (di DrawioConnectElement) GetPoints() []DrawioConnectElementPoint {
+func (di *DrawioConnectElement) GetPoints() []DrawioConnectElementPoint {
 	return di.points
+}
+func (di *DrawioConnectElement) AddPoint(x int, y int) {
+	di.points = append(di.points, DrawioConnectElementPoint{x, y})
 }
 
 ///////////////////////////////////////
@@ -145,15 +148,18 @@ func (di DrawioConnectElement) GetPoints() []DrawioConnectElementPoint {
 
 type TreeNodeInterface interface {
 	GetParent() TreeNodeInterface
+	SetParent(TreeNodeInterface)
 	AddIconTreeNode(icon TreeNodeInterface)
 	GetIconTreeNodes() []TreeNodeInterface
 	GetChildren() ([]TreeNodeInterface, []TreeNodeInterface)
 	GetType() string
+	IsLine() bool
 	GetName() string
 	GetDrawioElementInterface() DrawioElementInterface
 	SetPosition(position *Position)
 	GetPosition() *Position
 	SetDrawioInfo()
+	AllocPassenger() int
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -165,6 +171,9 @@ type TreeNode struct {
 	position *Position
 }
 
+func (tn *TreeNode) AllocPassenger() int {
+	return 0
+}
 func (tn *TreeNode) GetName() string { return "name?" }
 
 func (tn *TreeNode) GetDrawioElementInterface() DrawioElementInterface {
@@ -174,6 +183,10 @@ func (tn *TreeNode) GetDrawioElementInterface() DrawioElementInterface {
 func (tn *TreeNode) GetParent() TreeNodeInterface {
 	return tn.parent
 }
+func (tn *TreeNode) SetParent(p TreeNodeInterface) {
+	tn.parent = p
+}
+
 func (tn *TreeNode) AddIconTreeNode(icon TreeNodeInterface) {
 	tn.elements = append(tn.elements, icon)
 }
@@ -195,6 +208,13 @@ func (tn *TreeNode) SetPosition(position *Position) {
 }
 func (tn *TreeNode) GetPosition() *Position {
 	return tn.position
+}
+func (tn *TreeNode) IsLine() bool {
+	return false
+}
+
+func (tn *TreeNode) GetType() string {
+	return "No type"
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -317,8 +337,18 @@ func (tn *SubnetTreeNode) GetType() string { return "subnet" }
 
 type IconTreeNode struct {
 	TreeNode
+	nPassengers int
 }
 
+func NewIconTreeNode(parent TreeNodeInterface) IconTreeNode {
+	return IconTreeNode{NewTreeNode(&DrawioIconElement{}, parent), 0}
+}
+
+func (tn *IconTreeNode) AllocPassenger() int {
+	n := tn.nPassengers
+	tn.nPassengers++
+	return []int{0, 1, -1, 2, -2, 3, -3, 4, -4}[n]
+}
 func (tn *IconTreeNode) SetDrawioInfo() {
 	di := tn.DrawioElementInterface.(*DrawioIconElement)
 	position := tn.GetPosition()
@@ -337,7 +367,7 @@ type NITreeNode struct {
 }
 
 func NewNITreeNode(parent TreeNodeInterface, sg *SGTreeNode) *NITreeNode {
-	ni := NITreeNode{IconTreeNode{NewTreeNode(&DrawioIconElement{}, parent)}, sg, true}
+	ni := NITreeNode{NewIconTreeNode(parent), sg, true}
 	parent.AddIconTreeNode(&ni)
 	if sg != nil {
 		sg.AddIconTreeNode(&ni)
@@ -353,7 +383,7 @@ type GetWayTreeNode struct {
 }
 
 func NewGetWayTreeNode(parent TreeNodeInterface) *GetWayTreeNode {
-	gw := GetWayTreeNode{IconTreeNode{NewTreeNode(&DrawioIconElement{}, parent)}}
+	gw := GetWayTreeNode{NewIconTreeNode(parent)}
 	parent.AddIconTreeNode(&gw)
 	return &gw
 }
@@ -366,13 +396,21 @@ type VsiTreeNode struct {
 }
 
 func NewVsiTreeNode(parent TreeNodeInterface) *VsiTreeNode {
-	vsi := VsiTreeNode{IconTreeNode{NewTreeNode(&DrawioIconElement{}, parent)}, []TreeNodeInterface{}}
+	vsi := VsiTreeNode{NewIconTreeNode(parent), []TreeNodeInterface{}}
 	parent.AddIconTreeNode(&vsi)
 	return &vsi
 }
 func (tn *VsiTreeNode) AddNI(ni TreeNodeInterface) {
 	tn.nis = append(tn.nis, ni)
 }
+func (tn *VsiTreeNode) GetVsiSubnets() *map[TreeNodeInterface]bool {
+	vsiSubents := map[TreeNodeInterface]bool{}
+	for _, ni := range tn.nis {
+		vsiSubents[ni.GetParent()] = true
+	}
+	return &vsiSubents
+}
+
 func (tn *VsiTreeNode) GetType() string { return "vsi" }
 
 // ///////////////////////////////////////////
@@ -381,7 +419,7 @@ type InternetTreeNode struct {
 }
 
 func NewInternetTreeNode(parent TreeNodeInterface) *InternetTreeNode {
-	inter := InternetTreeNode{IconTreeNode{NewTreeNode(&DrawioIconElement{}, parent)}}
+	inter := InternetTreeNode{NewIconTreeNode(parent)}
 	parent.AddIconTreeNode(&inter)
 	return &inter
 }
@@ -393,36 +431,71 @@ type InternetSeviceTreeNode struct {
 }
 
 func NewInternetSeviceTreeNode(parent TreeNodeInterface) *InternetSeviceTreeNode {
-	inter := InternetSeviceTreeNode{IconTreeNode{NewTreeNode(&DrawioIconElement{}, parent)}}
+	inter := InternetSeviceTreeNode{NewIconTreeNode(parent)}
 	parent.AddIconTreeNode(&inter)
 	return &inter
 }
 func (tn *InternetSeviceTreeNode) GetType() string { return "internet_service" }
 
 // ////////////////////////////////////////////////////////////////
-type ConnectorTreeNode struct {
+type LineTreeNode struct {
 	TreeNode
 	src TreeNodeInterface
 	dst TreeNodeInterface
 }
 
-func (tn *ConnectorTreeNode) SetDrawioInfo() {
+func (tn *LineTreeNode) IsLine() bool {
+	return true
+}
+
+func (tn *LineTreeNode) SetDrawioInfo() {
 	di := tn.DrawioElementInterface.(*DrawioConnectElement)
 	di.srcId = tn.src.GetDrawioElementInterface().GetId()
 	di.dstId = tn.dst.GetDrawioElementInterface().GetId()
+	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
+
 }
 
 // ////////////////////////////////////////////////////////////////
-type VsiConnectorTreeNode struct {
-	ConnectorTreeNode
+type VsiLineTreeNode struct {
+	LineTreeNode
 }
 
-func NewVsiConnectorTreeNode(network TreeNodeInterface, src TreeNodeInterface, dst TreeNodeInterface) *VsiConnectorTreeNode {
-	conn := VsiConnectorTreeNode{ConnectorTreeNode{NewTreeNode(&DrawioConnectElement{}, nil), src, dst}}
+func NewVsiLineTreeNode(network TreeNodeInterface, vsi TreeNodeInterface, ni TreeNodeInterface) *VsiLineTreeNode {
+	vsi.(*VsiTreeNode).AddNI(ni)
+	conn := VsiLineTreeNode{LineTreeNode{NewTreeNode(&DrawioConnectElement{}, network), vsi, ni}}
 	network.(*NetworkTreeNode).connections = append(network.(*NetworkTreeNode).connections, &conn)
 	return &conn
 }
-func (tn *VsiConnectorTreeNode) GetType() string { return "vsi_connector" }
+func (tn *VsiLineTreeNode) GetType() string { return "vsi_connector" }
+
+// ////////////////////////////////////////////////////////////////
+type ConnectivityTreeNode struct {
+	LineTreeNode
+	directed bool
+}
+
+func NewConnectivityLineTreeNode(network TreeNodeInterface, src TreeNodeInterface, dst TreeNodeInterface, directed bool) *ConnectivityTreeNode {
+	conn := ConnectivityTreeNode{LineTreeNode{NewTreeNode(&DrawioConnectElement{}, network), src, dst}, directed}
+	network.(*NetworkTreeNode).connections = append(network.(*NetworkTreeNode).connections, &conn)
+	return &conn
+}
+func (tn *ConnectivityTreeNode) SetPassage(passage TreeNodeInterface) {
+	tn.SetParent(passage)
+	passengerNumber := passage.AllocPassenger()
+	tn.DrawioElementInterface.(*DrawioConnectElement).AddPoint(iconSize+passengerNumber*10, iconSize/2+passengerNumber*10)
+	tn.DrawioElementInterface.(*DrawioConnectElement).AddPoint(-passengerNumber*10, iconSize/2+passengerNumber*10)
+}
+
+func (tn *ConnectivityTreeNode) GetType() string {
+	if tn.directed {
+		return "diredge"
+	} else {
+		return "undiredge"
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func GetElements(tn TreeNodeInterface) []TreeNodeInterface {
 	subtrees, leafs := tn.GetChildren()

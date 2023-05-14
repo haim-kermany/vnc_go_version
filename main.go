@@ -304,20 +304,20 @@ func setIconsPositions(network TreeNodeInterface, m *Matrix) {
 			icons := zone.GetIconTreeNodes()
 			for _, icon := range icons {
 				if icon.GetType() == "vsi" {
-					vsiSubents := map[TreeNodeInterface]bool{}
-					for _, ni := range icon.(*VsiTreeNode).nis {
-						vsiSubents[ni.GetParent()] = true
-					}
-					if len(vsiSubents) == 1 {
+					vsiSubents := icon.(*VsiTreeNode).GetVsiSubnets()
+					if len(*vsiSubents) == 1 {
 						subnet := icon.(*VsiTreeNode).nis[0].GetParent()
+						icon.SetParent(subnet)
 						icon.SetPosition(NewPosition(subnet.GetPosition().firstRow, subnet.GetPosition().firstRow, subnet.GetPosition().firstCol, subnet.GetPosition().firstCol))
 						icon.GetPosition().y_offset = iconSize
 					} else {
-						subnet := icon.(*VsiTreeNode).nis[0].GetParent()
-						icon.SetPosition(NewPosition(subnet.GetPosition().firstRow, subnet.GetPosition().firstRow, subnet.GetPosition().firstCol, subnet.GetPosition().firstCol))
-						icon.GetPosition().y_offset = subnetHight / 2
-						icon.GetPosition().x_offset = subnetWidth / 2
-
+						positionIndex := m.getPosiotonIndexes(icon.(*VsiTreeNode).nis[0].GetParent().GetPosition())
+						positionIndex.firstRowIndex += 1
+						position := m.getPosioton(positionIndex)
+						position.lastRow = position.firstRow
+						position.lastCol = position.firstCol
+						position.x_offset = subnetWidth/2 - iconSize/2
+						icon.SetPosition(position)
 					}
 
 				} else if icon.GetType() == "gateway" {
