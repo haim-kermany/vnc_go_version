@@ -303,7 +303,7 @@ func setIconsPositions(network TreeNodeInterface, m *Matrix) {
 		for _, zone := range vpc.(*VpcTreeNode).zones {
 			icons := zone.GetIconTreeNodes()
 			for _, icon := range icons {
-				if icon.GetType() == "vsi" {
+				if icon.IsVSI() {
 					vsiSubents := icon.(*VsiTreeNode).GetVsiSubnets()
 					if len(*vsiSubents) == 1 {
 						subnet := icon.(*VsiTreeNode).nis[0].GetParent()
@@ -320,7 +320,7 @@ func setIconsPositions(network TreeNodeInterface, m *Matrix) {
 						icon.SetPosition(position)
 					}
 
-				} else if icon.GetType() == "gateway" {
+				} else if icon.IsGateway() {
 					col := zone.(*ZoneTreeNode).subnets[0].GetPosition().firstCol
 					row := zone.GetPosition().firstRow
 					zone.GetPosition().firstRow.hight = iconSpace
