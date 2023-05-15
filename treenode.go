@@ -2,6 +2,8 @@ package main
 
 type DrawioElementInterface interface {
 	GetId() uint
+	GetId1() uint
+	GetId2() uint
 	SetId()
 }
 
@@ -13,6 +15,12 @@ type DrawioElement struct {
 
 func (di *DrawioElement) GetId() uint {
 	return di.id
+}
+func (di *DrawioElement) GetId1() uint {
+	return di.id + 1
+}
+func (di *DrawioElement) GetId2() uint {
+	return di.id + 2
 }
 func (di *DrawioElement) GetParentId() uint {
 	return di.parentId
@@ -347,7 +355,7 @@ func NewIconTreeNode(parent TreeNodeInterface) IconTreeNode {
 func (tn *IconTreeNode) AllocPassenger() int {
 	n := tn.nPassengers
 	tn.nPassengers++
-	return []int{0, 1, -1, 2, -2, 3, -3, 4, -4}[n]
+	return []int{0, 10, -10, 20, -20, 15, -15, 25, -25}[n]
 }
 func (tn *IconTreeNode) SetDrawioInfo() {
 	di := tn.DrawioElementInterface.(*DrawioIconElement)
@@ -452,8 +460,11 @@ func (tn *LineTreeNode) SetDrawioInfo() {
 	di := tn.DrawioElementInterface.(*DrawioConnectElement)
 	di.srcId = tn.src.GetDrawioElementInterface().GetId()
 	di.dstId = tn.dst.GetDrawioElementInterface().GetId()
-	di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
-
+	if tn.GetParent().GetType() == "ni" {
+		di.parentId = tn.GetParent().GetDrawioElementInterface().GetId2()
+	} else {
+		di.parentId = tn.GetParent().GetDrawioElementInterface().GetId()
+	}
 }
 
 // ////////////////////////////////////////////////////////////////
@@ -480,11 +491,17 @@ func NewConnectivityLineTreeNode(network TreeNodeInterface, src TreeNodeInterfac
 	network.(*NetworkTreeNode).connections = append(network.(*NetworkTreeNode).connections, &conn)
 	return &conn
 }
-func (tn *ConnectivityTreeNode) SetPassage(passage TreeNodeInterface) {
+func (tn *ConnectivityTreeNode) SetPassage(passage TreeNodeInterface, reverse bool) {
 	tn.SetParent(passage)
 	passengerNumber := passage.AllocPassenger()
-	tn.DrawioElementInterface.(*DrawioConnectElement).AddPoint(iconSize+passengerNumber*10, iconSize/2+passengerNumber*10)
-	tn.DrawioElementInterface.(*DrawioConnectElement).AddPoint(-passengerNumber*10, iconSize/2+passengerNumber*10)
+	if !reverse {
+		tn.DrawioElementInterface.(*DrawioConnectElement).AddPoint(iconSize, iconSize/2+passengerNumber)
+		tn.DrawioElementInterface.(*DrawioConnectElement).AddPoint(0, iconSize/2+passengerNumber)
+	} else {
+		tn.DrawioElementInterface.(*DrawioConnectElement).AddPoint(0, iconSize/2+passengerNumber)
+		tn.DrawioElementInterface.(*DrawioConnectElement).AddPoint(iconSize, iconSize/2+passengerNumber)
+	}
+
 }
 
 func (tn *ConnectivityTreeNode) GetType() string {

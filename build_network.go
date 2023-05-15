@@ -33,6 +33,8 @@ func create_network() TreeNodeInterface {
 	ni5 := NewNITreeNode(subnet121, sg11)
 	ni5.GetDrawioElementInterface().(*DrawioIconElement).svi = "svi2"
 	ni5.GetDrawioElementInterface().(*DrawioIconElement).floating_ip = "fip"
+	ni5b := NewNITreeNode(subnet121, sg11)
+	ni5b.GetDrawioElementInterface().(*DrawioIconElement).svi = "svi2"
 
 	vpc2 := NewVpcTreeNode(network)
 	zone21 := NewZoneTreeNode(vpc2)
@@ -88,16 +90,25 @@ func create_network() TreeNodeInterface {
 	is2 := NewInternetSeviceTreeNode(vpc2)
 
 	c1 := NewConnectivityLineTreeNode(network, ni4, i4, false)
-	c2 := NewConnectivityLineTreeNode(network, ni5, i2, false)
+	c2a := NewConnectivityLineTreeNode(network, ni5, i2, false)
+	c2b := NewConnectivityLineTreeNode(network, ni5, i2, true)
+	c2c := NewConnectivityLineTreeNode(network, i2, ni5, true)
+
 	c3 := NewConnectivityLineTreeNode(network, ni8, i3, true)
 	c4 := NewConnectivityLineTreeNode(network, ni11, i1, true)
 	c5 := NewConnectivityLineTreeNode(network, ni12, i1, true)
 
-	c1.SetPassage(gw11)
-	c2.SetPassage(gw12)
-	c3.SetPassage(gw21)
-	c4.SetPassage(gw22)
-	c5.SetPassage(gw22)
+	c6 := NewConnectivityLineTreeNode(network, ni5b, i3, false)
+
+	c1.SetPassage(gw11, false)
+	c2a.SetPassage(ni5, false)
+	c2b.SetPassage(ni5, false)
+	c2c.SetPassage(ni5, true)
+	c3.SetPassage(gw21, false)
+	c4.SetPassage(gw22, false)
+	c5.SetPassage(gw22, false)
+	c6.SetPassage(gw12, false)
+
 	NewConnectivityLineTreeNode(network, ni10, is2, true)
 	NewConnectivityLineTreeNode(network, ni1, is1, true)
 

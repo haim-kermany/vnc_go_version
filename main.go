@@ -427,12 +427,13 @@ func main() {
 
 	elements := GetElements(network)
 
-	templateFuncMap := template.FuncMap{
-		"add": func(x uint, y uint) uint {
-			return x + y
-		},
-	}
-	tmpl, err := template.New("drawio_template.txt").Funcs(templateFuncMap).ParseFiles("drawio_template.txt")
+	// templateFuncMap := template.FuncMap{
+	// 	"add": func(x uint, y uint) uint {
+	// 		return x + y
+	// 	},
+	// }
+	// tmpl, err := template.New("drawio_template.txt").Funcs(templateFuncMap).ParseFiles("drawio_template.txt")
+	tmpl, err := template.New("drawio_template.txt").ParseFiles("drawio_template.txt")
 	if err != nil {
 		panic(err)
 	}
