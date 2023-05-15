@@ -29,12 +29,12 @@ func create_network() TreeNodeInterface {
 	subnet112 := NewSubnetTreeNode(zone11)
 	subnet121 := NewSubnetTreeNode(zone12)
 	ni4 := NewNITreeNode(subnet112, sg12)
-	ni4.GetDrawioElementInterface().(*DrawioIconElement).svi = "svi1"
+	ni4.GetDrawioElement().svi = "svi1"
 	ni5 := NewNITreeNode(subnet121, sg11)
-	ni5.GetDrawioElementInterface().(*DrawioIconElement).svi = "svi2"
-	ni5.GetDrawioElementInterface().(*DrawioIconElement).floating_ip = "fip"
+	ni5.GetDrawioElement().svi = "svi2"
+	ni5.GetDrawioElement().floating_ip = "fip"
 	ni5b := NewNITreeNode(subnet121, sg11)
-	ni5b.GetDrawioElementInterface().(*DrawioIconElement).svi = "svi2"
+	ni5b.GetDrawioElement().svi = "svi2"
 
 	vpc2 := NewVpcTreeNode(network)
 	zone21 := NewZoneTreeNode(vpc2)

@@ -6,7 +6,7 @@
 <mxCell id="1" parent="0"/>
     {{ $IconSize := .IconSize}}
     {{range $node := .Nodes}}
-        {{ $element := $node.DrawioElementInterface }}
+        {{ $element := $node.DrawioElement }}
         <!-- {{$node.GetType}} {{$IconSize}}-->
         {{ if eq $node.GetType "pub" }}
             <mxCell id="FXCXVvDxTQtwc45PbP1s-{{$element.GetId1}}" value="Icons" style="" parent="0"/>
