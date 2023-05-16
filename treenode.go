@@ -155,8 +155,8 @@ type TreeNodeInterface interface {
 	IsDirectedEdge() bool
 	IsUnDirectedEdge() bool
 
-	SetPosition(position *Position)
-	GetPosition() *Position
+	SetLocation(location *Location)
+	GetLocation() *Location
 
 	GetDrawioElement() *DrawioElement
 	SetDrawioInfo()
@@ -169,7 +169,7 @@ type TreeNode struct {
 	DrawioElement
 	parent   TreeNodeInterface
 	elements []TreeNodeInterface
-	position *Position
+	location *Location
 }
 
 func (tn *TreeNode) AllocPassenger() int {
@@ -192,7 +192,8 @@ func (tn *TreeNode) GetIconTreeNodes() []TreeNodeInterface {
 }
 
 func NewTreeNode(parent TreeNodeInterface) TreeNode {
-	tn := TreeNode{DrawioElement{}, parent, []TreeNodeInterface{}, &Position{}}
+	tn := TreeNode{}
+	tn.parent = parent
 	tn.DrawioElement.SetId()
 	return tn
 
@@ -201,11 +202,11 @@ func (tn *TreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
 	return []TreeNodeInterface{}, []TreeNodeInterface{}
 }
 
-func (tn *TreeNode) SetPosition(position *Position) {
-	tn.position = position
+func (tn *TreeNode) SetLocation(location *Location) {
+	tn.location = location
 }
-func (tn *TreeNode) GetPosition() *Position {
-	return tn.position
+func (tn *TreeNode) GetLocation() *Location {
+	return tn.location
 }
 
 func (tn *TreeNode) IsLine() bool            { return false }
@@ -240,17 +241,17 @@ func NewSquereTreeNode(parent TreeNodeInterface) SquereTreeNode {
 }
 
 func (tn *SquereTreeNode) SetDrawioInfo() {
-	position := tn.GetPosition()
-	parentPosition := position
+	location := tn.GetLocation()
+	parentLocation := location
 	if tn.GetParent() != nil {
-		parentPosition = tn.GetParent().GetPosition()
+		parentLocation = tn.GetParent().GetLocation()
 		tn.DrawioElement.parentId = tn.GetParent().GetDrawioElement().GetId()
 	}
 	tn.DrawioElement.name = tn.GetName()
-	tn.DrawioElement.width = position.lastCol.width + position.lastCol.x - position.firstCol.x
-	tn.DrawioElement.hight = position.lastRow.hight + position.lastRow.y - position.firstRow.y
-	tn.DrawioElement.x = position.firstCol.x - parentPosition.firstCol.x
-	tn.DrawioElement.y = position.firstRow.y - parentPosition.firstRow.y
+	tn.DrawioElement.width = location.lastCol.thickness + location.lastCol.location - location.firstCol.location
+	tn.DrawioElement.hight = location.lastRow.thickness + location.lastRow.location - location.firstRow.location
+	tn.DrawioElement.x = location.firstCol.location - parentLocation.firstCol.location
+	tn.DrawioElement.y = location.firstRow.location - parentLocation.firstRow.location
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -360,12 +361,12 @@ func (tn *IconTreeNode) AllocPassenger() int {
 	return []int{0, 10, -10, 20, -20, 15, -15, 25, -25}[n]
 }
 func (tn *IconTreeNode) SetDrawioInfo() {
-	position := tn.GetPosition()
-	parentPosition := tn.GetParent().GetPosition()
+	location := tn.GetLocation()
+	parentLocation := tn.GetParent().GetLocation()
 	tn.DrawioElement.parentId = tn.GetParent().GetDrawioElement().GetId()
 	tn.DrawioElement.name = "icon name"
-	tn.DrawioElement.x = position.firstCol.x - parentPosition.firstCol.x + position.firstCol.width/2 - iconSize/2 + position.x_offset
-	tn.DrawioElement.y = position.firstRow.y - parentPosition.firstRow.y + position.firstRow.hight/2 - iconSize/2 + position.y_offset
+	tn.DrawioElement.x = location.firstCol.location - parentLocation.firstCol.location + location.firstCol.thickness/2 - iconSize/2 + location.x_offset
+	tn.DrawioElement.y = location.firstRow.location - parentLocation.firstRow.location + location.firstRow.thickness/2 - iconSize/2 + location.y_offset
 }
 
 // ///////////////////////////////////////////

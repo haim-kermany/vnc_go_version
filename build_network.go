@@ -1,5 +1,18 @@
 package main
 
+func create_network2() TreeNodeInterface {
+	network := NewNetworkTreeNode()
+	vpc1 := NewVpcTreeNode(network)
+	zone11 := NewZoneTreeNode(vpc1)
+	subnet111 := NewSubnetTreeNode(zone11)
+	subnet112 := NewSubnetTreeNode(zone11)
+	sg11 := NewSGTreeNode(vpc1)
+
+	NewNITreeNode(subnet111, sg11)
+	NewNITreeNode(subnet112, sg11)
+	return network
+}
+
 func create_network() TreeNodeInterface {
 	network := NewNetworkTreeNode()
 	i1 := NewInternetTreeNode(network)

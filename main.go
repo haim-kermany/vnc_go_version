@@ -26,135 +26,106 @@ const (
 	iconSpace      int = 4 * 40
 )
 
-type Row struct {
-	hight  int
-	y      int
-	inUse  bool
-	matrix *Matrix
+type Layer struct {
+	thickness int
+	location  int
+	inUse     bool
+	matrix    *Matrix
+	index     int
 }
 
-func NewRow(matrix *Matrix, hight int) *Row {
-	r := &Row{}
-	r.hight = hight
-	r.matrix = matrix
-	r.inUse = false
-	return r
+func NewLayer(matrix *Matrix, index int) *Layer {
+	return &Layer{borderDistance, 0, false, matrix, index}
 }
 
-type Col struct {
-	width  int
-	x      int
-	inUse  bool
-	matrix *Matrix
-}
-
-func NewCol(matrix *Matrix, width int) *Col {
-	c := &Col{}
-	c.width = width
-	c.matrix = matrix
-	c.inUse = false
-	return c
-}
-
-type Position struct {
-	firstRow *Row
-	lastRow  *Row
-	firstCol *Col
-	lastCol  *Col
+type Location struct {
+	firstRow *Layer
+	lastRow  *Layer
+	firstCol *Layer
+	lastCol  *Layer
 	x_offset int
 	y_offset int
 }
 
-func NewPosition(firstRow *Row, lastRow *Row, firstCol *Col, lastCol *Col) *Position {
-	return &Position{firstRow, lastRow, firstCol, lastCol, 0, 0}
+func NewLocation(firstRow *Layer, lastRow *Layer, firstCol *Layer, lastCol *Layer) *Location {
+	return &Location{firstRow, lastRow, firstCol, lastCol, 0, 0}
+}
+func NewCellLocation(firstRow *Layer, firstCol *Layer) *Location {
+	return &Location{firstRow, firstRow, firstCol, firstCol, 0, 0}
+}
+func (l *Location) NextRow() *Layer {
+	return l.lastRow.matrix.rows[l.lastRow.index+1]
+}
+func (l *Location) NextCol() *Layer {
+	return l.lastCol.matrix.cols[l.lastCol.index+1]
+}
+func (l *Location) PrevRow() *Layer {
+	return l.firstRow.matrix.rows[l.firstRow.index-1]
+}
+func (l *Location) PrevCol() *Layer {
+	return l.firstCol.matrix.cols[l.firstCol.index-1]
 }
 
-type PositionIndexes struct {
-	firstRowIndex int
-	lastRowIndex  int
-	firstColIndex int
-	lastColIndex  int
-}
-
-func (i *PositionIndexes) updateIndexes(new_i *PositionIndexes) {
-	if i.firstRowIndex > new_i.firstRowIndex {
-		i.firstRowIndex = new_i.firstRowIndex
-	}
-	if i.firstColIndex > new_i.firstColIndex {
-		i.firstColIndex = new_i.firstColIndex
-	}
-	if i.lastRowIndex < new_i.lastRowIndex {
-		i.lastRowIndex = new_i.lastRowIndex
-	}
-	if i.lastColIndex < new_i.lastColIndex {
-		i.lastColIndex = new_i.lastColIndex
-	}
-
-}
+////////////////////////////////////////////////////
 
 type Matrix struct {
-	rows []*Row
-	cols []*Col
+	rows []*Layer
+	cols []*Layer
 }
 
 func NewMatrix(nrows int, ncols int) *Matrix {
 	m := Matrix{}
-	m.rows = make([]*Row, nrows)
-	m.cols = make([]*Col, ncols)
+	m.rows = make([]*Layer, nrows)
+	m.cols = make([]*Layer, ncols)
 	for i := range m.rows {
-		m.rows[i] = NewRow(&m, borderDistance)
+		m.rows[i] = NewLayer(&m, i)
 	}
 	for i := range m.cols {
-		m.cols[i] = NewCol(&m, borderDistance)
+		m.cols[i] = NewLayer(&m, i)
 	}
 	return &m
 }
 
-func (matrix *Matrix) getPosiotonIndexes(position *Position) PositionIndexes {
-	positionIndex := PositionIndexes{}
-	for i, row := range matrix.rows {
-		if row == position.firstRow {
-			positionIndex.firstRowIndex = i
-		}
-		if row == position.lastRow {
-			positionIndex.lastRowIndex = i
-		}
-	}
-	for i, col := range matrix.cols {
-		if col == position.firstCol {
-			positionIndex.firstColIndex = i
-		}
-		if col == position.lastCol {
-			positionIndex.lastColIndex = i
-		}
-	}
-	return positionIndex
-}
-
-func (matrix *Matrix) getPosioton(positionIndexes PositionIndexes) *Position {
-	return NewPosition(
-		matrix.rows[positionIndexes.firstRowIndex],
-		matrix.rows[positionIndexes.lastRowIndex],
-		matrix.cols[positionIndexes.firstColIndex],
-		matrix.cols[positionIndexes.lastColIndex],
-	)
-}
-
 func (matrix *Matrix) removeUnused() {
-	rows := []*Row{}
-	cols := []*Col{}
+	rows := []*Layer{}
+	cols := []*Layer{}
 	for _, row := range matrix.rows {
 		if row.inUse {
+			row.index = len(rows)
 			rows = append(rows, row)
 		}
 	}
 	for _, col := range matrix.cols {
 		if col.inUse {
+			col.index = len(cols)
 			cols = append(cols, col)
 		}
 	}
 	matrix.rows = rows
 	matrix.cols = cols
+}
+
+func (matrix *Matrix) Expend(new_i func(int) int) {
+	new_rows := make([]*Layer, new_i(len(matrix.rows)))
+	new_cols := make([]*Layer, new_i(len(matrix.cols)))
+	for i := range new_rows {
+		new_rows[i] = NewLayer(matrix, i)
+	}
+	for i := range new_cols {
+		new_cols[i] = NewLayer(matrix, i)
+	}
+
+	for i, row := range matrix.rows {
+		new_rows[new_i(i)] = row
+		row.index = new_i(i)
+	}
+	for i, col := range matrix.cols {
+		new_cols[new_i(i)] = col
+		col.index = new_i(i)
+	}
+	matrix.rows = new_rows
+	matrix.cols = new_cols
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,132 +142,126 @@ func (matrix *Matrix) removeUnused() {
 
 func layout(network TreeNodeInterface) {
 	m := LayoutIcons(network)
-	m = AddBorders(network, m)
-	setIconsPositions(network, m)
+	m.Expend(func(i int) int { return 6*i + 3 })
+	AddBorders(network, m)
+	m.removeUnused()
+	setIconsLocations(network, m)
 	SetLayersLocation(m)
 	resolveDrawioInfo(network)
+}
+
+func MergeLocations(tn TreeNodeInterface) {
+	subtrees, leafs := tn.GetChildren()
+	locations := []*Location{}
+	for _, c := range append(subtrees, leafs...) {
+		locations = append(locations, c.GetLocation())
+	}
+	var firstRow, lastRow, firstCol, lastCol *Layer = nil, nil, nil, nil
+	for _, l := range locations {
+		if l == nil {
+			continue
+		}
+		if firstRow == nil || l.firstRow.index < firstRow.index {
+			firstRow = l.firstRow
+		}
+		if lastRow == nil || l.lastRow.index > lastRow.index {
+			lastRow = l.lastRow
+		}
+		if lastCol == nil || l.firstCol.index < firstCol.index {
+			firstCol = l.firstCol
+		}
+		if lastCol == nil || l.lastCol.index > lastCol.index {
+			lastCol = l.lastCol
+		}
+	}
+	tn.SetLocation(NewLocation(firstRow, lastRow, firstCol, lastCol))
 }
 
 // ///////////////////////////////////////////////////////////////
 func LayoutIcons(network TreeNodeInterface) *Matrix {
 	m := NewMatrix(100, 100)
-	indexes := PositionIndexes{}
+	colIndex := 0
 	for _, vpc := range network.(*NetworkTreeNode).vpcs {
-		indexes.firstRowIndex = 0
-		indexes.lastRowIndex = 0
 		for _, zone := range vpc.(*VpcTreeNode).zones {
-			indexes.firstRowIndex = 0
-			indexes.lastRowIndex = 0
+			rowIndex := 0
 			for _, subnet := range zone.(*ZoneTreeNode).subnets {
 				rowFull := false
 				for i, icon := range subnet.GetIconTreeNodes() {
-					icon.SetPosition(m.getPosioton(indexes))
+					icon.SetLocation(NewCellLocation(m.rows[rowIndex], m.cols[colIndex]))
+					m.rows[rowIndex].inUse = true
+					m.cols[colIndex].inUse = true
 					if rowFull || i == len(subnet.GetIconTreeNodes())-1 {
-						indexes.firstRowIndex++
-						indexes.lastRowIndex++
+						rowIndex++
 					}
 					rowFull = !rowFull
 				}
 			}
-			indexes.firstColIndex++
-			indexes.lastColIndex++
+			colIndex++
 		}
+	}
+	m.removeUnused()
+	for _, row := range m.rows {
+		row.thickness = subnetHight
+	}
+	for _, col := range m.cols {
+		col.thickness = subnetWidth
 	}
 	return m
 }
 
+/////////////////////////////////////////////////////////////
+
+func ExpendLocation(tn TreeNodeInterface) {
+	l := tn.GetLocation()
+	l = NewLocation(l.PrevRow(), l.NextRow(), l.PrevCol(), l.NextCol())
+	tn.SetLocation(l)
+	l.firstRow.inUse = true
+	l.lastRow.inUse = true
+	l.firstCol.inUse = true
+	l.lastCol.inUse = true
+
+}
+
 // ///////////////////////////////////////////////////////////////////////////////////////
-func AddBorders(network TreeNodeInterface, m *Matrix) *Matrix {
-	new_m := NewMatrix(6*len(m.rows)+1, 6*len(m.cols)+1)
-	for i, row := range m.rows {
-		row.inUse = true
-		row.hight = subnetHight
-		new_m.rows[i*6+3] = row
-	}
-	for i, col := range m.cols {
-		col.inUse = true
-		col.width = subnetWidth
-		new_m.cols[i*6+3] = col
-	}
+
+func AddBorders(network TreeNodeInterface, m *Matrix) {
 
 	for _, vpc := range network.(*NetworkTreeNode).vpcs {
-		vpcIndexes := PositionIndexes{len(m.rows), 0, len(m.cols), 0}
 		for _, zone := range vpc.(*VpcTreeNode).zones {
-			zoneIndexes := PositionIndexes{len(m.rows), 0, len(m.cols), 0}
 			for _, subnet := range zone.(*ZoneTreeNode).subnets {
-				subnetIndexes := PositionIndexes{len(m.rows), 0, len(m.cols), 0}
-				for _, icon := range subnet.GetIconTreeNodes() {
-					iconIndexes := m.getPosiotonIndexes(icon.GetPosition())
-					subnetIndexes.updateIndexes(&iconIndexes)
-				}
-				subnet.SetPosition(m.getPosioton(subnetIndexes))
-
-				vpcIndexes.updateIndexes(&subnetIndexes)
-				zoneIndexes.updateIndexes(&subnetIndexes)
-				newSubnetIndexes := PositionIndexes{
-					subnetIndexes.firstRowIndex*6 + 3,
-					subnetIndexes.lastRowIndex*6 + 3,
-					subnetIndexes.firstColIndex*6 + 3,
-					subnetIndexes.lastColIndex*6 + 3}
-				new_m.rows[newSubnetIndexes.firstRowIndex-1].inUse = true
-				new_m.rows[newSubnetIndexes.lastRowIndex+1].inUse = true
-				new_m.cols[newSubnetIndexes.firstColIndex-1].inUse = true
-				new_m.cols[newSubnetIndexes.lastColIndex+1].inUse = true
-
+				MergeLocations(subnet)
+				subnet.GetLocation().PrevRow().inUse = true
+				subnet.GetLocation().PrevCol().inUse = true
 			}
-			newZoneIndexes := PositionIndexes{
-				zoneIndexes.firstRowIndex*6 + 2,
-				zoneIndexes.lastRowIndex*6 + 4,
-				zoneIndexes.firstColIndex*6 + 2,
-				zoneIndexes.lastColIndex*6 + 4}
-
-			new_m.rows[newZoneIndexes.firstRowIndex-1].inUse = true
-			new_m.cols[newZoneIndexes.firstColIndex-1].inUse = true
-
-			new_m.rows[newZoneIndexes.firstRowIndex].inUse = true
-			new_m.rows[newZoneIndexes.lastRowIndex].inUse = true
-			new_m.cols[newZoneIndexes.firstColIndex].inUse = true
-			new_m.cols[newZoneIndexes.lastColIndex].inUse = true
-
-			zone.SetPosition(new_m.getPosioton(newZoneIndexes))
+			MergeLocations(zone)
+			ExpendLocation(zone)
+			zone.GetLocation().PrevRow().inUse = true
+			zone.GetLocation().PrevCol().inUse = true
 		}
-		newVpcIndexes := PositionIndexes{
-			vpcIndexes.firstRowIndex*6 + 1,
-			vpcIndexes.lastRowIndex*6 + 5,
-			vpcIndexes.firstColIndex*6 + 1,
-			vpcIndexes.lastColIndex*6 + 5}
-
-		new_m.rows[newVpcIndexes.firstRowIndex-1].inUse = true
-		new_m.cols[newVpcIndexes.firstColIndex-1].inUse = true
-
-		new_m.rows[newVpcIndexes.firstRowIndex].inUse = true
-		new_m.rows[newVpcIndexes.lastRowIndex].inUse = true
-		new_m.cols[newVpcIndexes.firstColIndex].inUse = true
-		new_m.cols[newVpcIndexes.lastColIndex].inUse = true
-
-		vpc.SetPosition(new_m.getPosioton(newVpcIndexes))
+		MergeLocations(vpc)
+		ExpendLocation(vpc)
+		vpc.GetLocation().PrevRow().inUse = true
+		vpc.GetLocation().PrevCol().inUse = true
 	}
-	new_m.rows[len(new_m.rows)-1].inUse = true
-	new_m.cols[len(new_m.cols)-1].inUse = true
-	new_m.removeUnused()
-	network.SetPosition(NewPosition(new_m.rows[0], new_m.rows[len(m.rows)-1], new_m.cols[0], new_m.cols[len(m.cols)-1]))
-	return new_m
+	MergeLocations(network)
+	ExpendLocation(network)
 }
 
 // ////////////////////////////////////////////////////////////////////////////////////////
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////
-func setIconsPositions(network TreeNodeInterface, m *Matrix) {
+func setIconsLocations(network TreeNodeInterface, m *Matrix) {
 	for _, vpc := range network.(*NetworkTreeNode).vpcs {
 		icons := vpc.GetIconTreeNodes()
 		if len(vpc.GetIconTreeNodes()) > 0 {
-			vpc.GetPosition().firstRow.hight = iconSpace
+			vpc.GetLocation().firstRow.thickness = iconSpace
 		}
 		iconIndex := 0
-		indexes := m.getPosiotonIndexes(vpc.GetPosition())
-		for ci := indexes.firstColIndex; ci <= indexes.lastColIndex && iconIndex < len(icons); ci++ {
-			if m.cols[ci].width >= iconSpace || (ci > indexes.firstColIndex && m.cols[ci-1].width >= iconSpace) {
-				icons[iconIndex].SetPosition(NewPosition(m.rows[indexes.firstRowIndex], m.rows[indexes.firstRowIndex], m.cols[ci], m.cols[ci]))
+		firstColIndex := vpc.GetLocation().firstCol.index
+		lastColIndex := vpc.GetLocation().lastCol.index
+		for ci := firstColIndex; ci <= lastColIndex && iconIndex < len(icons); ci++ {
+			if m.cols[ci].thickness >= iconSpace || (ci > firstColIndex && m.cols[ci-1].thickness >= iconSpace) {
+				icons[iconIndex].SetLocation(NewCellLocation(vpc.GetLocation().firstRow, m.cols[ci]))
 				iconIndex++
 			}
 		}
@@ -308,24 +273,22 @@ func setIconsPositions(network TreeNodeInterface, m *Matrix) {
 					if len(*vsiSubents) == 1 {
 						subnet := icon.(*VsiTreeNode).nis[0].GetParent()
 						icon.SetParent(subnet)
-						icon.SetPosition(NewPosition(subnet.GetPosition().firstRow, subnet.GetPosition().firstRow, subnet.GetPosition().firstCol, subnet.GetPosition().firstCol))
-						icon.GetPosition().y_offset = iconSize
+						icon.SetLocation(NewCellLocation(subnet.GetLocation().firstRow, subnet.GetLocation().firstCol))
+						icon.GetLocation().y_offset = iconSize
 					} else {
-						positionIndex := m.getPosiotonIndexes(icon.(*VsiTreeNode).nis[0].GetParent().GetPosition())
-						positionIndex.firstRowIndex += 1
-						position := m.getPosioton(positionIndex)
-						position.lastRow = position.firstRow
-						position.lastCol = position.firstCol
-						position.x_offset = subnetWidth/2 - iconSize/2
-						icon.SetPosition(position)
+						vpcLocation := icon.(*VsiTreeNode).nis[0].GetParent().GetLocation()
+						location := NewCellLocation(vpcLocation.firstRow, vpcLocation.firstCol)
+						location = NewCellLocation(vpcLocation.NextRow(), vpcLocation.firstCol)
+						location.x_offset = subnetWidth/2 - iconSize/2
+						icon.SetLocation(location)
 					}
 
 				} else if icon.IsGateway() {
-					col := zone.(*ZoneTreeNode).subnets[0].GetPosition().firstCol
-					row := zone.GetPosition().firstRow
-					zone.GetPosition().firstRow.hight = iconSpace
-					icon.SetPosition(NewPosition(row, row, col, col))
-					icon.GetPosition().x_offset -= subnetWidth/2 - iconSize/2
+					col := zone.(*ZoneTreeNode).subnets[0].GetLocation().firstCol
+					row := zone.GetLocation().firstRow
+					zone.GetLocation().firstRow.thickness = iconSpace
+					icon.SetLocation(NewCellLocation(row, col))
+					icon.GetLocation().x_offset -= subnetWidth/2 - iconSize/2
 
 				}
 			}
@@ -334,9 +297,9 @@ func setIconsPositions(network TreeNodeInterface, m *Matrix) {
 				for _, icon1 := range icons {
 					for _, icon2 := range icons {
 						if icon1 != icon2 {
-							if icon1.GetPosition().firstRow == icon2.GetPosition().firstRow && icon1.GetPosition().firstCol == icon2.GetPosition().firstCol {
-								icon1.GetPosition().x_offset = iconSize
-								icon2.GetPosition().x_offset = -iconSize
+							if icon1.GetLocation().firstRow == icon2.GetLocation().firstRow && icon1.GetLocation().firstCol == icon2.GetLocation().firstCol {
+								icon1.GetLocation().x_offset = iconSize
+								icon2.GetLocation().x_offset = -iconSize
 							}
 						}
 					}
@@ -347,20 +310,20 @@ func setIconsPositions(network TreeNodeInterface, m *Matrix) {
 	icons := network.GetIconTreeNodes()
 	iconIndex := 0
 	if len(icons) > 0 {
-		network.GetPosition().firstCol.width = iconSpace
+		network.GetLocation().firstCol.thickness = iconSpace
 	}
 	for ri, row := range m.rows {
 		if iconIndex >= len(icons) {
 			break
 		}
-		if row.hight >= iconSpace || (ri > 0 && m.rows[ri-1].hight >= iconSpace) {
-			icons[iconIndex].SetPosition(NewPosition(row, row, m.cols[0], m.cols[0]))
+		if row.thickness >= iconSpace || (ri > 0 && m.rows[ri-1].thickness >= iconSpace) {
+			icons[iconIndex].SetLocation(NewCellLocation(row, m.cols[0]))
 			iconIndex++
 		}
 	}
 }
 
-func setSGPositions(network TreeNodeInterface) {
+func setSGLocations(network TreeNodeInterface) {
 	for _, vpc := range network.(*NetworkTreeNode).vpcs {
 		for _, sg := range vpc.(*VpcTreeNode).sgs {
 			sg.SetDrawioInfo()
@@ -402,13 +365,13 @@ func resolveDrawioInfo(network TreeNodeInterface) {
 func SetLayersLocation(m *Matrix) {
 	var y int = 0
 	for _, row := range m.rows {
-		row.y = y
-		y = y + row.hight
+		row.location = y
+		y = y + row.thickness
 	}
 	var x int = 0
 	for _, col := range m.cols {
-		col.x = x
-		x = x + col.width
+		col.location = x
+		x = x + col.thickness
 	}
 }
 
