@@ -248,10 +248,10 @@ func (tn *SquereTreeNode) SetDrawioInfo() {
 		tn.DrawioElement.parentId = tn.GetParent().GetDrawioElement().GetId()
 	}
 	tn.DrawioElement.name = tn.GetName()
-	tn.DrawioElement.width = location.lastCol.thickness + location.lastCol.location - location.firstCol.location
-	tn.DrawioElement.hight = location.lastRow.thickness + location.lastRow.location - location.firstRow.location
-	tn.DrawioElement.x = location.firstCol.location - parentLocation.firstCol.location
-	tn.DrawioElement.y = location.firstRow.location - parentLocation.firstRow.location
+	tn.DrawioElement.width = location.lastCol.thickness + location.lastCol.distance - location.firstCol.distance
+	tn.DrawioElement.hight = location.lastRow.thickness + location.lastRow.distance - location.firstRow.distance
+	tn.DrawioElement.x = location.firstCol.distance - parentLocation.firstCol.distance
+	tn.DrawioElement.y = location.firstRow.distance - parentLocation.firstRow.distance
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -365,8 +365,8 @@ func (tn *IconTreeNode) SetDrawioInfo() {
 	parentLocation := tn.GetParent().GetLocation()
 	tn.DrawioElement.parentId = tn.GetParent().GetDrawioElement().GetId()
 	tn.DrawioElement.name = "icon name"
-	tn.DrawioElement.x = location.firstCol.location - parentLocation.firstCol.location + location.firstCol.thickness/2 - iconSize/2 + location.x_offset
-	tn.DrawioElement.y = location.firstRow.location - parentLocation.firstRow.location + location.firstRow.thickness/2 - iconSize/2 + location.y_offset
+	tn.DrawioElement.x = location.firstCol.distance - parentLocation.firstCol.distance + location.firstCol.thickness/2 - iconSize/2 + location.x_offset
+	tn.DrawioElement.y = location.firstRow.distance - parentLocation.firstRow.distance + location.firstRow.thickness/2 - iconSize/2 + location.y_offset
 }
 
 // ///////////////////////////////////////////
