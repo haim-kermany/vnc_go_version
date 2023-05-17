@@ -48,6 +48,7 @@ func create_network() TreeNodeInterface {
 	ni5.GetDrawioElement().floating_ip = "fip"
 	ni5b := NewNITreeNode(subnet121, sg11)
 	ni5b.GetDrawioElement().svi = "svi2"
+	ni5b.GetDrawioElement().floating_ip = "fip2"
 
 	vpc2 := NewVpcTreeNode(network)
 	zone21 := NewZoneTreeNode(vpc2)
@@ -112,6 +113,7 @@ func create_network() TreeNodeInterface {
 	c5 := NewConnectivityLineTreeNode(network, ni12, i1, true)
 
 	c6 := NewConnectivityLineTreeNode(network, ni5b, i3, false)
+	c7 := NewConnectivityLineTreeNode(network, ni5b, i4, false)
 
 	c1.SetPassage(gw11, false)
 	c2a.SetPassage(ni5, false)
@@ -121,6 +123,7 @@ func create_network() TreeNodeInterface {
 	c4.SetPassage(gw22, false)
 	c5.SetPassage(gw22, false)
 	c6.SetPassage(gw12, false)
+	c7.SetPassage(ni5b, false)
 
 	NewConnectivityLineTreeNode(network, ni10, is2, true)
 	NewConnectivityLineTreeNode(network, ni1, is1, true)

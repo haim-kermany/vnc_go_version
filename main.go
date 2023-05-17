@@ -19,11 +19,11 @@ import (
 // //////////////////////////////////////////////////////////////////////////////
 
 const (
-	borderDistance int = 40
+	borderDistance int = 20
 	subnetWidth    int = 8 * 40
 	subnetHight    int = 6 * 40
 	iconSize       int = 60
-	iconSpace      int = 4 * 40
+	iconSpace      int = 3 * 40
 )
 
 type Layer struct {
@@ -411,11 +411,19 @@ func main() {
 		}
 	}()
 
-	type DrawioInfo struct {
-		IconSize uint
-		Nodes    []TreeNodeInterface
+	type Sizes struct {
+		IconSize   int
+		FipXOffset int
+		FipYOffset int
+		VSIXOffset int
+		VSIYOffset int
+		VSISize    int
 	}
-	err = tmpl.Execute(fo, DrawioInfo{60, elements})
+	type DrawioInfo struct {
+		Sizes
+		Nodes []TreeNodeInterface
+	}
+	err = tmpl.Execute(fo, DrawioInfo{Sizes{iconSize, -iconSize, 30, 30, -10, 40}, elements})
 	if err != nil {
 		panic(err)
 	}
