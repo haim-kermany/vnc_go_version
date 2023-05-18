@@ -10,6 +10,7 @@ const (
 
 func layout(network TreeNodeInterface) {
 	m := LayoutSubnetIcons(network)
+	setSGLocations(network)
 	m.Expend(func(i int) int { return 6*i + 3 })
 	SetSquersLocations(network)
 	m.removeUnused()
@@ -20,8 +21,9 @@ func layout(network TreeNodeInterface) {
 
 func MergeLocations(tn TreeNodeInterface) {
 	subtrees, leafs := tn.GetChildren()
+	icons := tn.GetIconTreeNodes()
 	locations := []*Location{}
-	for _, c := range append(subtrees, leafs...) {
+	for _, c := range append(icons, append(subtrees, leafs...)...) {
 		locations = append(locations, c.GetLocation())
 	}
 	var firstRow, lastRow, firstCol, lastCol *Layer = nil, nil, nil, nil
@@ -60,6 +62,11 @@ func LayoutSubnetIcons(network TreeNodeInterface) *Matrix {
 					m.cols[colIndex].SetThickness(subnetWidth)
 					if rowFull || i == len(subnet.GetIconTreeNodes())-1 {
 						rowIndex++
+					} else if icon.IsNI() && icon.(*NITreeNode).sg != nil {
+						nextIcon := subnet.GetIconTreeNodes()[i+1]
+						if !nextIcon.IsNI() || icon.(*NITreeNode).sg != nextIcon.(*NITreeNode).sg {
+							rowIndex++
+						}
 					}
 					rowFull = !rowFull
 				}

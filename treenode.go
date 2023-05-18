@@ -319,12 +319,14 @@ func NewSGTreeNode(parent *VpcTreeNode) *SGTreeNode {
 func (tn *SGTreeNode) IsSG() bool { return true }
 
 func (tn *SGTreeNode) SetDrawioInfo() {
+	location := tn.GetLocation()
+	parentLocation := tn.GetParent().GetLocation()
 	tn.DrawioElement.parentId = tn.GetParent().GetDrawioElement().GetId()
-	tn.DrawioElement.name = "sg name"
-	tn.DrawioElement.width = 400
-	tn.DrawioElement.hight = 400
-	tn.DrawioElement.x = 40
-	tn.DrawioElement.y = 40
+	tn.DrawioElement.name = tn.GetName()
+	tn.DrawioElement.width = location.lastCol.thickness + location.lastCol.distance - location.firstCol.distance - 2*borderDistance
+	tn.DrawioElement.hight = location.lastRow.thickness + location.lastRow.distance - location.firstRow.distance - 2*borderDistance
+	tn.DrawioElement.x = location.firstCol.distance - parentLocation.firstCol.distance + borderDistance
+	tn.DrawioElement.y = location.firstRow.distance - parentLocation.firstRow.distance + borderDistance
 }
 
 /////////////////////////////////////////////////////////////////////////
