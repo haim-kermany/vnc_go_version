@@ -10,7 +10,7 @@ const (
 
 func layout(network TreeNodeInterface) {
 	m := LayoutSubnetIcons(network)
-	setSGLocations(network)
+	setSGLocations(network, m)
 	m.Expend(func(i int) int { return 6*i + 3 })
 	SetSquersLocations(network)
 	m.removeUnused()
@@ -19,11 +19,9 @@ func layout(network TreeNodeInterface) {
 	resolveDrawioInfo(network)
 }
 
-func MergeLocations(tn TreeNodeInterface) {
-	subtrees, leafs := tn.GetChildren()
-	icons := tn.GetIconTreeNodes()
+func GetCombinedLocations(tns []TreeNodeInterface) *Location {
 	locations := []*Location{}
-	for _, c := range append(icons, append(subtrees, leafs...)...) {
+	for _, c := range tns {
 		locations = append(locations, c.GetLocation())
 	}
 	var firstRow, lastRow, firstCol, lastCol *Layer = nil, nil, nil, nil
@@ -44,7 +42,13 @@ func MergeLocations(tn TreeNodeInterface) {
 			lastCol = l.lastCol
 		}
 	}
-	tn.SetLocation(NewLocation(firstRow, lastRow, firstCol, lastCol))
+	return NewLocation(firstRow, lastRow, firstCol, lastCol)
+}
+
+func MergeLocations(tn TreeNodeInterface) {
+	subtrees, leafs := tn.GetChildren()
+	icons := tn.GetIconTreeNodes()
+	tn.SetLocation(GetCombinedLocations(append(icons, append(subtrees, leafs...)...)))
 }
 
 // ///////////////////////////////////////////////////////////////
@@ -138,18 +142,22 @@ func setIconsLocations(network TreeNodeInterface, m *Matrix) {
 			icons := zone.GetIconTreeNodes()
 			for _, icon := range icons {
 				if icon.IsVSI() {
-					vsiSubents := icon.(*VsiTreeNode).GetVsiSubnets()
+					vsiIcon := icon.(*VsiTreeNode)
+					vsiSubents := vsiIcon.GetVsiSubnets()
 					if len(*vsiSubents) == 1 {
-						subnet := icon.(*VsiTreeNode).nis[0].GetParent()
-						icon.SetParent(subnet)
-						icon.SetLocation(NewCellLocation(subnet.GetLocation().firstRow, subnet.GetLocation().firstCol))
-						icon.GetLocation().y_offset = iconSize
+						icon.SetParent(vsiIcon.nis[0].GetParent())
+						nisCombinedLocation := GetCombinedLocations(vsiIcon.nis)
+						icon.SetLocation(NewCellLocation(nisCombinedLocation.firstRow, nisCombinedLocation.firstCol))
+						if nisCombinedLocation.firstRow == nisCombinedLocation.lastRow {
+							vsiIcon.GetLocation().y_offset = iconSize
+						} else {
+							vsiIcon.GetLocation().y_offset = subnetHight / 2
+						}
 					} else {
 						vpcLocation := icon.(*VsiTreeNode).nis[0].GetParent().GetLocation()
-						location := NewCellLocation(vpcLocation.firstRow, vpcLocation.firstCol)
-						location = NewCellLocation(vpcLocation.NextRow(), vpcLocation.firstCol)
+						location := NewCellLocation(vpcLocation.NextRow(), vpcLocation.firstCol)
 						location.x_offset = subnetWidth/2 - iconSize/2
-						icon.SetLocation(location)
+						vsiIcon.SetLocation(location)
 					}
 
 				} else if icon.IsGateway() {
@@ -192,10 +200,30 @@ func setIconsLocations(network TreeNodeInterface, m *Matrix) {
 	}
 }
 
-func setSGLocations(network TreeNodeInterface) {
+func setSGLocations(network TreeNodeInterface, m *Matrix) {
 	for _, vpc := range network.(*NetworkTreeNode).vpcs {
 		for _, sg := range vpc.(*VpcTreeNode).sgs {
-			MergeLocations(sg)
+			nisCombinedLocation := GetCombinedLocations(sg.GetIconTreeNodes())
+			var isInLoacation [20][20]bool
+			for _, ni := range sg.GetIconTreeNodes() {
+				isInLoacation[ni.GetLocation().firstRow.index][ni.GetLocation().firstCol.index] = true
+			}
+			for ri := nisCombinedLocation.firstRow.index; ri <= nisCombinedLocation.lastRow.index; ri++ {
+				var currentLocation *Location = nil
+				for ci := nisCombinedLocation.firstCol.index; ci <= nisCombinedLocation.lastCol.index; ci++ {
+					if isInLoacation[ri][ci] {
+						if currentLocation == nil {
+							currentLocation = NewCellLocation(m.rows[ri], m.cols[ci])
+						} else if ci == currentLocation.lastCol.index+1 {
+							currentLocation.lastCol = m.cols[ci]
+						} else {
+							NewPartialSGTreeNode(sg.(*SGTreeNode)).SetLocation(currentLocation)
+							currentLocation = nil
+						}
+						NewPartialSGTreeNode(sg.(*SGTreeNode)).SetLocation(currentLocation)
+					}
+				}
+			}
 		}
 	}
 }
@@ -215,6 +243,9 @@ func resolveDrawioInfo(network TreeNodeInterface) {
 		}
 		for _, sg := range vpc.(*VpcTreeNode).sgs {
 			sg.SetDrawioInfo()
+			for _, psg := range sg.(*SGTreeNode).psgs {
+				psg.SetDrawioInfo()
+			}
 		}
 		for _, zone := range vpc.(*VpcTreeNode).zones {
 			zone.SetDrawioInfo()

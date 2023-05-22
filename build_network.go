@@ -88,13 +88,13 @@ func create_network() TreeNodeInterface {
 	NewVsiLineTreeNode(network, vsi4, ni12)
 
 	ni20 := NewNITreeNode(subnet231, sg22)
-	ni21 := NewNITreeNode(subnet231, sg22)
+	ni21 := NewNITreeNode(subnet231, nil)
 	ni22 := NewNITreeNode(subnet231, sg22)
 	ni23 := NewNITreeNode(subnet231, sg22)
-	ni24 := NewNITreeNode(subnet231, sg22)
+	ni24 := NewNITreeNode(subnet231, nil)
 	ni25 := NewNITreeNode(subnet231, sg22)
-	ni26 := NewNITreeNode(subnet231, sg22)
-	ni27 := NewNITreeNode(subnet231, sg22)
+	ni26 := NewNITreeNode(subnet231, nil)
+	ni27 := NewNITreeNode(subnet231, nil)
 	ni28 := NewNITreeNode(subnet231, sg22)
 	ni29 := NewNITreeNode(subnet231, sg22)
 

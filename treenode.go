@@ -144,6 +144,7 @@ type TreeNodeInterface interface {
 	IsZone() bool
 	IsSubnet() bool
 	IsSG() bool
+	IsPartialSG() bool
 	IsVSI() bool
 	IsNI() bool
 	IsGateway() bool
@@ -174,6 +175,9 @@ type TreeNode struct {
 
 func (tn *TreeNode) AllocPassenger() int {
 	return 0
+}
+func (tn *TreeNode) SetDrawioInfo() {
+
 }
 func (tn *TreeNode) GetName() string { return "name?" }
 
@@ -215,6 +219,7 @@ func (tn *TreeNode) IsVPC() bool             { return false }
 func (tn *TreeNode) IsZone() bool            { return false }
 func (tn *TreeNode) IsSubnet() bool          { return false }
 func (tn *TreeNode) IsSG() bool              { return false }
+func (tn *TreeNode) IsPartialSG() bool       { return false }
 func (tn *TreeNode) IsVSI() bool             { return false }
 func (tn *TreeNode) IsNI() bool              { return false }
 func (tn *TreeNode) IsGateway() bool         { return false }
@@ -284,7 +289,7 @@ func NewVpcTreeNode(parent *NetworkTreeNode) *VpcTreeNode {
 	return &vpc
 }
 func (tn *VpcTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
-	return tn.zones, append(tn.elements, tn.sgs...)
+	return append(tn.zones, tn.sgs...), tn.elements
 }
 func (tn *VpcTreeNode) IsVPC() bool { return true }
 
@@ -308,17 +313,34 @@ func (tn *ZoneTreeNode) IsZone() bool { return true }
 ///////////////////////////////////////////////////////////////////////
 
 type SGTreeNode struct {
-	SquereTreeNode
+	TreeNode
+	psgs []TreeNodeInterface
 }
 
 func NewSGTreeNode(parent *VpcTreeNode) *SGTreeNode {
-	sg := SGTreeNode{NewSquereTreeNode(parent)}
+	sg := SGTreeNode{NewTreeNode(parent), []TreeNodeInterface{}}
 	parent.sgs = append(parent.sgs, &sg)
 	return &sg
 }
+func (tn *SGTreeNode) GetChildren() ([]TreeNodeInterface, []TreeNodeInterface) {
+	return []TreeNodeInterface{}, tn.psgs
+}
 func (tn *SGTreeNode) IsSG() bool { return true }
 
-func (tn *SGTreeNode) SetDrawioInfo() {
+///////////////////////////////////////////////////////////////////////
+
+type PartialSGTreeNode struct {
+	SquereTreeNode
+}
+
+func NewPartialSGTreeNode(parent *SGTreeNode) *PartialSGTreeNode {
+	psg := PartialSGTreeNode{NewSquereTreeNode(parent.GetParent())}
+	parent.psgs = append(parent.psgs, &psg)
+	return &psg
+}
+func (tn *PartialSGTreeNode) IsPartialSG() bool { return true }
+
+func (tn *PartialSGTreeNode) SetDrawioInfo() {
 	location := tn.GetLocation()
 	parentLocation := tn.GetParent().GetLocation()
 	tn.DrawioElement.parentId = tn.GetParent().GetDrawioElement().GetId()
